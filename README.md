@@ -13,16 +13,16 @@ The site has to do four things that a Canva-published page cannot: take payments
 stay editable by a non-developer, and be something we control the source of. It does **not** need
 user accounts — that decision is what keeps the stack this small.
 
-| Concern         | Choice                           | Notes                                                      |
-| --------------- | -------------------------------- | ---------------------------------------------------------- |
-| Site            | **Astro 7**                      | Static output, zero JS shipped by default                  |
-| Styling         | **Plain scoped CSS**             | One page didn't justify Tailwind. Tokens in `Layout.astro` |
-| Content editing | **Sanity** _(planned)_           | Studio in-repo at `/studio` so Raul edits without a deploy |
-| Payments        | **Stripe Payment Links**         | Hosted checkout, no backend, no webhooks, no card data     |
-| Booking         | **Cal.com** _(planned)_          | Open source, embeddable, can carry Stripe prepayment       |
-| Contact         | **`mailto:` / WhatsApp**         | No backend to post a form to, and nothing yet needs one    |
-| Hosting         | **Cloudflare Pages** _(planned)_ | Static + one Worker for the contact endpoint               |
-| Database        | **None**                         | Stripe, Cal.com and Sanity each hold their own state       |
+| Concern         | Choice                   | Notes                                                              |
+| --------------- | ------------------------ | ------------------------------------------------------------------ |
+| Site            | **Astro 7**              | Static output, zero JS shipped by default                          |
+| Styling         | **Plain scoped CSS**     | One page didn't justify Tailwind. Tokens in `Layout.astro`         |
+| Content editing | **Sanity** _(planned)_   | Studio in-repo at `/studio` so Raul edits without a deploy         |
+| Payments        | **Stripe Payment Links** | Hosted checkout, no backend, no webhooks, no card data             |
+| Booking         | **Cal.com** _(planned)_  | Open source, embeddable, can carry Stripe prepayment               |
+| Contact         | **`mailto:` / WhatsApp** | No backend to post a form to, and nothing yet needs one            |
+| Hosting         | **Cloudflare Workers**   | Static assets from `dist/`; no Worker script, see `wrangler.jsonc` |
+| Database        | **None**                 | Stripe, Cal.com and Sanity each hold their own state               |
 
 ## Feature status
 
@@ -56,6 +56,8 @@ user accounts — that decision is what keeps the stack this small.
 These are encoded as `it.todo(...)` entries in `tests/build-output.test.ts`. Turn each into a real
 assertion as the content lands:
 
+- [ ] `X-Robots-Tag: noindex` removed from `public/_headers` — do this **last**, once
+      everything else here is ticked
 - [ ] `src/legal.ts` carries Raul's real address, phone and email — the Impressum is unusable without them
 - [ ] Every CTA points at a real Stripe Payment Link instead of `#`
 - [ ] Real testimonials replace the Canva placeholder copy and stock portraits
@@ -95,6 +97,20 @@ None of these are blocked on engineering:
 - A replacement hero photo (see the launch checklist)
 - Confirmation of what "registrations" means — a signup form, or booking a specific class slot.
   The answer decides between a plain form and a Cal.com embed in step 3.
+
+## Deployment
+
+Pushes to `main` build and deploy automatically through Cloudflare Workers Builds.
+
+- `wrangler.jsonc` — project name and the assets directory. There is no Worker script; the site
+  is static assets served straight from `dist/`.
+- `.nvmrc` — pins Node 22, matching CI. Cloudflare's default is older than `engines` allows.
+- `public/_headers` — response headers Cloudflare applies to every request. Astro copies it into
+  `dist/`, where Cloudflare looks for it. **It currently carries `X-Robots-Tag: noindex`**, which
+  keeps the placeholder content out of search results. Removing that line is the last step of launch.
+
+Cloudflare builds `main` without running the tests. The GitHub Actions workflow is the gate, and it
+only runs on pull requests — so keep merging through PRs rather than pushing to `main`.
 
 ## Getting started
 

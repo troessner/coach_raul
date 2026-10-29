@@ -1,0 +1,9 @@
+# Served by Cloudflare for every response. Astro copies public/ into dist/, and
+# Cloudflare reads _headers from the root of the assets directory.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  # TODO: delete this line at launch. Until the placeholder testimonials, the
+  # "#" CTAs and the TODO contact details are gone, nothing here may be indexed.
+  X-Robots-Tag: noindex
