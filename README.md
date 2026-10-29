@@ -20,7 +20,7 @@ user accounts — that decision is what keeps the stack this small.
 | Content editing | **Sanity** _(planned)_           | Studio in-repo at `/studio` so Raul edits without a deploy |
 | Payments        | **Stripe Payment Links**         | Hosted checkout, no backend, no webhooks, no card data     |
 | Booking         | **Cal.com** _(planned)_          | Open source, embeddable, can carry Stripe prepayment       |
-| Contact form    | **Mailgun** _(planned)_          | One Astro endpoint; Mailgun is already a company vendor    |
+| Contact         | **`mailto:` / WhatsApp**         | No backend to post a form to, and nothing yet needs one    |
 | Hosting         | **Cloudflare Pages** _(planned)_ | Static + one Worker for the contact endpoint               |
 | Database        | **None**                         | Stripe, Cal.com and Sanity each hold their own state       |
 
@@ -32,7 +32,10 @@ user accounts — that decision is what keeps the stack this small.
 - [x] "Meet Coach Raul Payares" bio section
 - [x] Four service cards (Personal Training, Nutrition, Mindset, 90-Day Challenge)
 - [x] Success stories grid (4 testimonials)
-- [x] Footer with logo, "Stay connected" and social icons
+- [x] Footer with logo, "Stay connected", social icons and legal links
+- [x] Impressum and Datenschutzerklärung (German, as the law requires) — details still placeholders
+- [x] Contact links in the footer — email, phone, WhatsApp — details still placeholders
+- [x] Self-hosted Archivo — no request leaves the visitor's browser for a Google domain
 - [x] Responsive down to phone width
 - [x] Automatic responsive image optimization (PNG → WebP, ~6.9 MB → ~700 KB)
 - [x] CI: formatting, type-check, build, tests
@@ -46,7 +49,6 @@ user accounts — that decision is what keeps the stack this small.
 | 3   | Intro video         | Section between hero and bio; YouTube/Vimeo embed                                                                  |
 | 4   | Real client reviews | Replace the Canva placeholder copy and stock photos                                                                |
 | 5   | Social media links  | Real profile URLs on the four footer icons                                                                         |
-| 6   | Contact details     | Email / phone / WhatsApp, plus a form posting to a Mailgun endpoint                                                |
 | 7   | Search bar          | **Deliberately skipped.** One page, ~5 sections — nothing to search. Revisit only if the site grows past ~10 pages |
 
 ### Launch checklist
@@ -54,6 +56,7 @@ user accounts — that decision is what keeps the stack this small.
 These are encoded as `it.todo(...)` entries in `tests/build-output.test.ts`. Turn each into a real
 assertion as the content lands:
 
+- [ ] `src/legal.ts` carries Raul's real address, phone and email — the Impressum is unusable without them
 - [ ] Every CTA points at a real Stripe Payment Link instead of `#`
 - [ ] Real testimonials replace the Canva placeholder copy and stock portraits
 - [ ] Each social icon links to a real profile
@@ -70,9 +73,12 @@ The remaining work has a deliberate sequence. Each step assumes the one before i
 3. **Stripe Payment Links + Cal.com embed.** Paste the links into the service cards. If a service
    needs prepaid slot booking rather than a one-off purchase, use Cal.com's Stripe integration for it
    instead of a bare Payment Link.
-4. **Contact endpoint.** `src/pages/api/contact.ts` posting to Mailgun. This is the first genuinely
-   functional code in the repo, so it is the first thing that needs unit tests of its own.
-5. **Intro video section**, between hero and bio.
+4. **Intro video section**, between hero and bio.
+
+A contact _form_ was considered and dropped. The footer's `mailto:`, `tel:` and WhatsApp links do
+the same job with no endpoint, no Mailgun account, no secret to rotate, no spam filtering and no
+validation to get wrong. Build `src/pages/api/contact.ts` when those links demonstrably are not
+enough — and note that doing so is what first forces a server runtime into a static site.
 
 ## Waiting on the client
 
@@ -80,7 +86,10 @@ None of these are blocked on engineering:
 
 - Real testimonials — names, quotes, photos (4 of them)
 - Social profile URLs for Facebook, X, Instagram, TikTok
-- Contact details: email, phone, WhatsApp
+- Contact details: email and phone. The phone number has to be in international format
+  (`+49 30 …`) or the WhatsApp link will not resolve
+- A postal address for the Impressum, and whether he has a USt-IdNr. § 5 DDG needs a real
+  street address — a PO box does not satisfy it
 - A Stripe account, plus the price of each service
 - The intro video
 - A replacement hero photo (see the launch checklist)
@@ -117,8 +126,11 @@ src/
 │   └── Testimonial.astro   one success story, repeated 4x
 ├── layouts/
 │   └── Layout.astro   html shell, meta tags, design tokens, global styles
-└── pages/
-    └── index.astro    the page; section content lives in arrays at the top
+├── pages/
+│   ├── index.astro        the page; section content lives in arrays at the top
+│   ├── impressum.astro    § 5 DDG anbieterkennzeichnung
+│   └── datenschutz.astro  Art. 13 DSGVO privacy notice
+└── legal.ts            operator name, address and contact, shared by both legal pages
 tests/
 └── build-output.test.ts    assertions against the built HTML
 ```

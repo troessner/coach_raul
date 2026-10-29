@@ -5,6 +5,7 @@ import Logo from '../components/Logo.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import Testimonial from '../components/Testimonial.astro';
+import { operator, telHref, whatsAppHref } from '../legal';
 import heroPhoto from '../assets/hero.png';
 import portrait from '../assets/raul-portrait.png';
 import gymWeights from '../assets/gym-weights.png';
@@ -166,8 +167,25 @@ const socials = [
 			<Logo color="accent" />
 			<div class="footer-connect">
 				<h2 class="display footer-heading">Stay connected</h2>
+				<ul class="contact">
+					<li>
+						<a href={`mailto:${operator.email}`}>{operator.email}</a>
+					</li>
+					<li>
+						<a href={telHref(operator.phone)}>{operator.phone}</a>
+					</li>
+					<li>
+						<a href={whatsAppHref(operator.phone)} rel="noopener noreferrer" target="_blank">
+							WhatsApp
+						</a>
+					</li>
+				</ul>
 				<SocialLinks links={socials} />
 			</div>
+			<nav class="legal" aria-label="Rechtliches">
+				<a href="/impressum">Impressum</a>
+				<a href="/datenschutz">Datenschutz</a>
+			</nav>
 		</div>
 	</footer>
 </Layout>
@@ -306,6 +324,38 @@ const socials = [
 		justify-content: space-between;
 		gap: 4rem;
 		padding-block: clamp(2rem, 5vw, 3.5rem);
+	}
+
+	.contact {
+		list-style: none;
+		margin: 0 0 1.75rem;
+		padding: 0;
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.contact a {
+		text-decoration: none;
+	}
+
+	.contact a:hover {
+		color: var(--accent);
+	}
+
+	.legal {
+		display: flex;
+		gap: 1.75rem;
+		font-size: 0.72rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	.legal a {
+		text-decoration: none;
+	}
+
+	.legal a:hover {
+		color: var(--accent);
 	}
 
 	.footer-heading {

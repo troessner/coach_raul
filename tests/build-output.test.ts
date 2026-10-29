@@ -10,13 +10,19 @@ import { describe, expect, it } from 'vitest';
  * Requires `npm run build` first — `npm run ci` and the GitHub workflow both
  * build before they test.
  */
-const distIndex = fileURLToPath(new URL('../dist/index.html', import.meta.url));
+const read = (page: string) => {
+	const file = fileURLToPath(new URL(`../dist/${page}`, import.meta.url));
 
-if (!existsSync(distIndex)) {
-	throw new Error(`No build output at ${distIndex}. Run "npm run build" before "npm test".`);
-}
+	if (!existsSync(file)) {
+		throw new Error(`No build output at ${file}. Run "npm run build" before "npm test".`);
+	}
 
-const html = readFileSync(distIndex, 'utf8');
+	return readFileSync(file, 'utf8');
+};
+
+const html = read('index.html');
+const impressum = read('impressum/index.html');
+const datenschutz = read('datenschutz/index.html');
 
 describe('built home page', () => {
 	it('has exactly one h1', () => {
@@ -52,8 +58,50 @@ describe('built home page', () => {
 		expect(hrefless).toEqual([]);
 	});
 
+	it('links to the Impressum and the Datenschutzerklärung', () => {
+		// Both have to be reachable from the home page — § 5 DDG, Art. 13 DSGVO.
+		expect(html).toContain('href="/impressum"');
+		expect(html).toContain('href="/datenschutz"');
+	});
+
+	it('offers a reachable way to make contact', () => {
+		// Deliberately a mailto / tel / WhatsApp link rather than a form — there is
+		// no backend to post one to, and nothing here needs one yet.
+		expect(html).toContain('href="mailto:');
+		expect(html).toContain('href="tel:');
+		expect(html).toContain('href="https://wa.me/');
+	});
+
 	// Launch gates — unskip each one as the real content lands. See README.
 	it.todo('points every call to action at a real Stripe Payment Link, not "#"');
 	it.todo('ships real client testimonials instead of the Canva placeholder copy');
 	it.todo('links each social icon to a real profile URL');
+});
+
+describe('legal pages', () => {
+	it('builds both pages with their headings', () => {
+		expect(impressum).toContain('>Impressum<');
+		expect(datenschutz).toContain('>Datenschutzerklärung<');
+	});
+
+	it('names the statute the Impressum exists to satisfy', () => {
+		expect(impressum).toContain('§ 5 DDG');
+	});
+
+	it('cross-links the two pages', () => {
+		expect(impressum).toContain('href="/datenschutz"');
+		expect(datenschutz).toContain('href="/impressum"');
+	});
+
+	it.todo("carries Raul's real address, phone and email instead of TODO placeholders");
+});
+
+describe('every built page', () => {
+	it('loads no font or asset from a Google domain', () => {
+		// Remote Google Fonts hand every visitor's IP to Google, which is a standing
+		// Abmahnung risk for a German site. The font is self-hosted — keep it that way.
+		for (const page of [html, impressum, datenschutz]) {
+			expect(page).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+		}
+	});
 });
