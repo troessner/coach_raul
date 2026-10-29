@@ -23,6 +23,7 @@ const read = (page: string) => {
 const html = read('index.html');
 const impressum = read('impressum/index.html');
 const datenschutz = read('datenschutz/index.html');
+const notFound = read('404.html');
 
 describe('built home page', () => {
 	it('has exactly one h1', () => {
@@ -60,8 +61,9 @@ describe('built home page', () => {
 
 	it('links to the Impressum and the Datenschutzerklärung', () => {
 		// Both have to be reachable from the home page — § 5 DDG, Art. 13 DSGVO.
-		expect(html).toContain('href="/impressum"');
-		expect(html).toContain('href="/datenschutz"');
+		// The trailing slash matters: without it the host answers 307, not 200.
+		expect(html).toContain('href="/impressum/"');
+		expect(html).toContain('href="/datenschutz/"');
 	});
 
 	it('offers a reachable way to make contact', () => {
@@ -89,14 +91,22 @@ describe('legal pages', () => {
 	});
 
 	it('cross-links the two pages', () => {
-		expect(impressum).toContain('href="/datenschutz"');
-		expect(datenschutz).toContain('href="/impressum"');
+		expect(impressum).toContain('href="/datenschutz/"');
+		expect(datenschutz).toContain('href="/impressum/"');
 	});
 
 	it.todo("carries Raul's real address, phone and email instead of TODO placeholders");
 });
 
 describe('every built page', () => {
+	it('declares an absolute canonical URL', () => {
+		// Relative values here are ignored. They have to come off Astro.site, so
+		// this also fails if `site` ever drops out of astro.config.mjs.
+		for (const page of [html, impressum, datenschutz, notFound]) {
+			expect(page).toMatch(/<link rel="canonical" href="https:\/\/[^"]+"/);
+		}
+	});
+
 	it('loads no font or asset from a Google domain', () => {
 		// Remote Google Fonts hand every visitor's IP to Google, which is a standing
 		// Abmahnung risk for a German site. The font is self-hosted — keep it that way.
@@ -107,6 +117,12 @@ describe('every built page', () => {
 });
 
 describe('deploy config', () => {
+	it('builds a 404 page for Cloudflare to serve', () => {
+		// wrangler.jsonc sets not_found_handling; without this file it has nothing
+		// to point at and visitors get Cloudflare's unstyled default.
+		expect(notFound).toContain('Page not found');
+	});
+
 	it('ships the _headers file Cloudflare serves responses with', () => {
 		// It lives in public/, so a move or rename silently stops it reaching dist/
 		// and the site goes indexable without anything visibly breaking.

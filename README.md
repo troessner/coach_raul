@@ -102,6 +102,11 @@ None of these are blocked on engineering:
 
 Pushes to `main` build and deploy automatically through Cloudflare Workers Builds.
 
+Live at **https://coach-raul.timo-roessner.workers.dev** — temporary, and `noindex`ed.
+
+- `astro.config.mjs` — `site` feeds the canonical URL and `og:url`. **It currently points at the
+  workers.dev hostname**; swap it the day a real domain is attached, or the two will compete in
+  search results.
 - `wrangler.jsonc` — project name and the assets directory. There is no Worker script; the site
   is static assets served straight from `dist/`.
 - `.nvmrc` — pins Node 22, matching CI. Cloudflare's default is older than `engines` allows.
@@ -144,6 +149,7 @@ src/
 │   └── Layout.astro   html shell, meta tags, design tokens, global styles
 ├── pages/
 │   ├── index.astro        the page; section content lives in arrays at the top
+│   ├── 404.astro          served by Cloudflare via not_found_handling
 │   ├── impressum.astro    § 5 DDG anbieterkennzeichnung
 │   └── datenschutz.astro  Art. 13 DSGVO privacy notice
 └── legal.ts            operator name, address and contact, shared by both legal pages

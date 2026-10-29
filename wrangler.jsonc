@@ -5,5 +5,7 @@
 	"compatibility_date": "2026-10-29",
 	"assets": {
 		"directory": "./dist",
+		// Without this Cloudflare serves its own unstyled 404 instead of ours.
+		"not_found_handling": "404-page",
 	},
 }
