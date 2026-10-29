@@ -1,22 +1,25 @@
-## Development
+# AGENTS.md
 
-When starting the dev server, use background mode:
+Project conventions, the quality bar, and testing rules live in **[CLAUDE.md](CLAUDE.md)**.
+Project description, stack rationale, feature status and the launch checklist live in
+**[README.md](README.md)**. Read both before starting work.
 
-```
+## Dev server
+
+Start it in background mode so it survives between commands:
+
+```sh
 astro dev --background
 ```
 
-Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
+Manage it with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
-## Documentation
+## Astro documentation
 
-Full documentation: https://docs.astro.build
-
-Consult these guides before working on related tasks:
+Full docs: https://docs.astro.build
 
 - [Adding pages, dynamic routes, or middleware](https://docs.astro.build/en/guides/routing/)
 - [Working with Astro components](https://docs.astro.build/en/basics/astro-components/)
-- [Using React, Vue, Svelte, or other framework components](https://docs.astro.build/en/guides/framework-components/)
+- [Images and `astro:assets`](https://docs.astro.build/en/guides/images/)
 - [Adding or managing content](https://docs.astro.build/en/guides/content-collections/)
-- [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
-- [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
+- [Endpoints (for the contact form)](https://docs.astro.build/en/guides/endpoints/)

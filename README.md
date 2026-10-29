@@ -60,6 +60,33 @@ assertion as the content lands:
 - [ ] Hero photo replaced — the current one is an AI composite with a cropped-off Meta AI watermark
 - [ ] `gym-weights.png` swapped for an Unsplash/Pexels equivalent (Canva stock licensing is scoped to Canva designs)
 
+## Build order
+
+The remaining work has a deliberate sequence. Each step assumes the one before it:
+
+1. ~~**Static page from the design**~~ — done. Real markup, hardcoded content.
+2. **Sanity.** Studio in-repo at `/studio`. Model the schema on the arrays already at the top of
+   `src/pages/index.astro` — the markup exists first precisely so the content model isn't guesswork.
+3. **Stripe Payment Links + Cal.com embed.** Paste the links into the service cards. If a service
+   needs prepaid slot booking rather than a one-off purchase, use Cal.com's Stripe integration for it
+   instead of a bare Payment Link.
+4. **Contact endpoint.** `src/pages/api/contact.ts` posting to Mailgun. This is the first genuinely
+   functional code in the repo, so it is the first thing that needs unit tests of its own.
+5. **Intro video section**, between hero and bio.
+
+## Waiting on the client
+
+None of these are blocked on engineering:
+
+- Real testimonials — names, quotes, photos (4 of them)
+- Social profile URLs for Facebook, X, Instagram, TikTok
+- Contact details: email, phone, WhatsApp
+- A Stripe account, plus the price of each service
+- The intro video
+- A replacement hero photo (see the launch checklist)
+- Confirmation of what "registrations" means — a signup form, or booking a specific class slot.
+  The answer decides between a plain form and a Cal.com embed in step 3.
+
 ## Getting started
 
 ```sh
@@ -102,12 +129,16 @@ the Sanity schema should mirror when it lands.
 
 ## Design source
 
-The Canva design is at
-`https://www.canva.com/design/DAHZUSoMBCo/V4CFaw5l2yikSnc2lXJAvQ/edit` — login-only, so it cannot be
-fetched. Export it as **Share → Download → PDF Standard** to read it.
+**`design/canva-design.pdf` is the approved design and the spec for this site.** It is committed so
+it stays readable without Canva access — read it directly rather than trying to fetch the Canva link.
 
-All images in `src/assets/` were pulled from that PDF with `pdfimages -png <file.pdf> out`, which is
-far quicker than exporting them one by one from Canva.
+The original lives at `https://www.canva.com/design/DAHZUSoMBCo/V4CFaw5l2yikSnc2lXJAvQ/edit`. That is
+login-only and returns 403 to any fetch; re-export it as **Share → Download → PDF Standard** if the
+design changes.
+
+All images in `src/assets/` were pulled from that PDF with `pdfimages -png design/canva-design.pdf out`,
+which is far quicker than exporting them one at a time from Canva. The hero needed its Meta AI
+watermark bars cropped off with `sips --cropOffset` afterwards.
 
 One deliberate deviation from the design: the Canva hero crops both heads off. Here the hero uses
 `object-position: center 18%` so the faces stay in frame. Change that one value in `index.astro` to
