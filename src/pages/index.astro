@@ -1,11 +1,348 @@
 ---
-import Welcome from '../components/Welcome.astro';
+import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
+import Logo from '../components/Logo.astro';
+import ServiceCard from '../components/ServiceCard.astro';
+import SocialLinks from '../components/SocialLinks.astro';
+import Testimonial from '../components/Testimonial.astro';
+import heroPhoto from '../assets/hero.png';
+import portrait from '../assets/raul-portrait.png';
+import gymWeights from '../assets/gym-weights.png';
+import client1 from '../assets/testimonial-003.png';
+import client2 from '../assets/testimonial-004.png';
+import client3 from '../assets/testimonial-005.png';
+import client4 from '../assets/testimonial-006.png';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// TODO: replace every '#' with its Stripe Payment Link before launch.
+const services = [
+	{
+		title: 'Personal Training',
+		body: "One-on-one training sessions tailored to your fitness level, goals, and lifestyle. Whether you want to build muscle, lose fat, or improve your overall fitness, I'll guide you every step of the way.",
+		href: '#',
+	},
+	{
+		title: 'Nutrition Coaching',
+		body: 'Personalized nutrition guidance to support your fitness goals, improve energy levels, and develop sustainable eating habits. No extreme diets, just a balanced approach to healthier living.',
+		href: '#',
+	},
+	{
+		title: 'Mindset & Motivation Coaching',
+		body: "Build confidence, discipline, and mental resilience. I'll help you overcome mental barriers, stay motivated, and develop the mindset needed for long-term success.",
+		href: '#',
+	},
+	{
+		title: '90-Day Transformation Challenge',
+		body: 'Ready to transform yourself in just 90 days? My structured transformation program combines strength training, functional fitness, personalized nutrition guidance, and mindset coaching to help you build muscle, improve endurance, develop healthy habits, and achieve measurable results.',
+		href: '#',
+	},
+];
+
+// TODO: placeholder copy and stock photos, straight from the Canva design.
+// Swap for real client quotes and photos before launch.
+const placeholder =
+	"Boost your product and service's credibility by adding testimonials from your clients. People love recommendations so feedback from others who've tried it is invaluable.";
+
+const testimonials = [
+	{ quote: placeholder, name: 'Client name', photo: client1 },
+	{ quote: placeholder, name: 'Client name', photo: client2 },
+	{ quote: placeholder, name: 'Client name', photo: client3 },
+	{ quote: placeholder, name: 'Client name', photo: client4 },
+];
+
+// TODO: real profile URLs.
+const socials = [
+	{ network: 'facebook', label: 'Facebook', href: '#' },
+	{ network: 'x', label: 'X', href: '#' },
+	{ network: 'instagram', label: 'Instagram', href: '#' },
+	{ network: 'tiktok', label: 'TikTok', href: '#' },
+] as const;
 ---
 
-<Layout>
-	<Welcome />
+<Layout
+	title="Coach Raul Payares — Get Stronger. Get Healthier."
+	description="Personal training, nutrition and mindset coaching in Berlin. 15+ years helping people build a stronger body and a stronger mind."
+>
+	<header class="hero">
+		<Image
+			class="hero-photo"
+			src={heroPhoto}
+			alt="Coach Raul Payares training with a client"
+			widths={[640, 1024, heroPhoto.width]}
+			sizes="100vw"
+			loading="eager"
+			fetchpriority="high"
+		/>
+		<div class="hero-overlay"></div>
+		<div class="shell hero-content">
+			<Logo />
+			<div class="hero-copy">
+				<h1 class="display hero-title">
+					Get stronger
+					<br />
+					Get healthier
+				</h1>
+				<p class="hero-sub">
+					I offer personal &amp; group training
+					<br />
+					designed to help you get
+					<br />
+					Stronger &amp; Healthier
+				</p>
+				<a class="cta" href="#services">
+					Sign up now
+				</a>
+			</div>
+		</div>
+	</header>
+
+	<main>
+		<section class="shell about" id="about">
+			<Image
+				class="portrait"
+				src={portrait}
+				alt="Raul Payares"
+				widths={[400, 800]}
+				sizes="(max-width: 820px) 80vw, 340px"
+			/>
+			<div class="about-text">
+				<h2 class="display section-heading about-heading">
+					Meet
+					<br />
+					Coach Raul Payares
+				</h2>
+				<div class="bio">
+					<p>Hi,</p>
+					<p>I'm Raul Payares, originally from Colombia and now based in Berlin.</p>
+					<p>
+						With over 15 years of experience in fitness and coaching, I've dedicated my career to helping people become
+						stronger, healthier, and more confident.
+					</p>
+					<p>
+						I specialize in strength and high intensity training, functional fitness, and mindset coaching, helping
+						people of all fitness levels achieve lasting results.
+					</p>
+					<p>
+						I believe fitness is more than just physical transformation. It's about building discipline, confidence,
+						mental resilience, and a healthier lifestyle.
+					</p>
+					<p>
+						My mission is simple: To help you build a stronger body, a stronger mind, and become the best version of
+						yourself.
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="shell services" id="services">
+			<h2 class="display section-heading services-heading">Service</h2>
+			<div class="service-grid">
+				{services.map((service) => (
+					<ServiceCard {...service} />
+				))}
+			</div>
+		</section>
+
+		<section class="shell stories" id="stories">
+			<h2 class="display section-heading">Success stories</h2>
+			<div class="story-grid">
+				{testimonials.map((testimonial) => (
+					<Testimonial {...testimonial} />
+				))}
+			</div>
+		</section>
+	</main>
+
+	<footer class="footer" id="contact">
+		<Image
+			class="footer-photo"
+			src={gymWeights}
+			alt=""
+			widths={[900, gymWeights.width]}
+			sizes="100vw"
+			aria-hidden="true"
+		/>
+		<div class="footer-overlay"></div>
+		<div class="shell footer-content">
+			<Logo color="accent" />
+			<div class="footer-connect">
+				<h2 class="display footer-heading">Stay connected</h2>
+				<SocialLinks links={socials} />
+			</div>
+		</div>
+	</footer>
 </Layout>
+
+<style>
+	/* ---------- hero ---------- */
+	.hero {
+		position: relative;
+		min-height: min(88vh, 760px);
+		display: flex;
+		align-items: stretch;
+		overflow: hidden;
+	}
+
+	.hero-photo {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		/* Keeps both faces in frame; raise toward 50% to crop tighter on the torsos. */
+		object-position: center 18%;
+	}
+
+	.hero-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(100deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 45%, rgba(0, 0, 0, 0.1) 100%);
+	}
+
+	.hero-content {
+		position: relative;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		gap: 3rem;
+		padding-block: clamp(1.75rem, 4vw, 2.75rem) clamp(2.5rem, 6vw, 4.5rem);
+	}
+
+	.hero-title {
+		font-size: clamp(2.6rem, 8vw, 5.25rem);
+	}
+
+	.hero-sub {
+		margin: 1.5rem 0 2.25rem;
+		font-size: clamp(0.9rem, 2vw, 1.05rem);
+		font-weight: 300;
+		line-height: 1.6;
+	}
+
+	/* ---------- about ---------- */
+	.about {
+		display: grid;
+		grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+		gap: clamp(2rem, 6vw, 5rem);
+		padding-block: clamp(4rem, 11vw, 8rem);
+	}
+
+	.portrait {
+		width: 100%;
+		height: auto;
+	}
+
+	.about-heading {
+		text-align: right;
+	}
+
+	.bio {
+		margin-top: 2.25rem;
+		max-width: 46ch;
+		margin-left: auto;
+		color: var(--accent);
+		font-size: 0.82rem;
+		line-height: 1.8;
+	}
+
+	.bio p {
+		margin: 0 0 1rem;
+	}
+
+	/* ---------- services ---------- */
+	.services {
+		padding-block: clamp(3rem, 8vw, 6rem);
+	}
+
+	.services-heading {
+		text-align: right;
+		margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+	}
+
+	.service-grid,
+	.story-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: clamp(1.5rem, 3vw, 2.5rem);
+		align-items: start;
+	}
+
+	/* ---------- success stories ---------- */
+	.stories {
+		padding-block: clamp(3rem, 8vw, 6rem) clamp(5rem, 12vw, 9rem);
+	}
+
+	.stories h2 {
+		margin-bottom: clamp(2.5rem, 6vw, 4rem);
+	}
+
+	/* ---------- footer ---------- */
+	.footer {
+		position: relative;
+		min-height: min(70vh, 540px);
+		display: flex;
+		overflow: hidden;
+	}
+
+	.footer-photo {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.footer-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.55);
+	}
+
+	.footer-content {
+		position: relative;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		gap: 4rem;
+		padding-block: clamp(2rem, 5vw, 3.5rem);
+	}
+
+	.footer-heading {
+		font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+		color: var(--accent);
+		margin-bottom: 1.25rem;
+	}
+
+	/* ---------- responsive ---------- */
+	@media (max-width: 860px) {
+		.about {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.portrait {
+			max-width: 320px;
+		}
+
+		.about-heading,
+		.services-heading {
+			text-align: left;
+		}
+
+		.bio {
+			margin-left: 0;
+		}
+
+		.service-grid,
+		.story-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 2.5rem;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.service-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+</style>

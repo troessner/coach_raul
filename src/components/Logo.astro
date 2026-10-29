@@ -1,0 +1,42 @@
+---
+interface Props {
+	/** The wordmark is white in the hero, accent yellow in the footer. */
+	color?: 'light' | 'accent';
+}
+
+const { color = 'light' } = Astro.props;
+---
+
+<div class="logo" data-color={color}>
+	<span class="mark">CRP</span>
+	<span class="tagline">Fitness &amp; Mental Coach</span>
+</div>
+
+<style>
+	.logo {
+		line-height: 1.3;
+	}
+
+	.mark {
+		display: block;
+		font-size: 1.05rem;
+		font-weight: 400;
+		letter-spacing: 0.42em;
+	}
+
+	.tagline {
+		display: block;
+		font-size: 0.5rem;
+		font-weight: 500;
+		letter-spacing: 0.22em;
+		text-transform: uppercase;
+	}
+
+	.logo[data-color='light'] {
+		color: #fff;
+	}
+
+	.logo[data-color='accent'] {
+		color: var(--accent);
+	}
+</style>

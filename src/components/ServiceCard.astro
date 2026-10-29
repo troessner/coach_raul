@@ -1,0 +1,49 @@
+---
+interface Props {
+	title: string;
+	body: string;
+	/** Stripe Payment Link for this service. */
+	href: string;
+}
+
+const { title, body, href } = Astro.props;
+---
+
+<article class="card">
+	<h3 class="title">{title}</h3>
+	<p class="body">{body}</p>
+	<a class="cta" href={href}>
+		Get started
+	</a>
+</article>
+
+<style>
+	.card {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.title {
+		margin: 0;
+		color: var(--accent);
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0.09em;
+		line-height: 1.4;
+		text-transform: uppercase;
+	}
+
+	.body {
+		margin: 0;
+		flex: 1;
+		color: var(--muted);
+		font-size: 0.82rem;
+		line-height: 1.75;
+	}
+
+	.cta {
+		align-self: stretch;
+		text-align: center;
+	}
+</style>

@@ -7,6 +7,9 @@ dist/
 # dependencies
 node_modules/
 
+# scratch files (PR bodies, commit messages) written by the publish/amend skills
+tmp/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
