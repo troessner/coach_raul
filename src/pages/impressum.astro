@@ -1,0 +1,65 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { operator } from '../legal';
+---
+
+<Layout
+	lang="de"
+	title="Impressum — Coach Raul Payares"
+	description="Anbieterkennzeichnung nach § 5 DDG für die Website von Coach Raul Payares."
+>
+	<main class="shell prose">
+		<h1 class="display">Impressum</h1>
+
+		<h2>Angaben gemäß § 5 DDG</h2>
+		<address>
+			{operator.name}
+			<br />
+			{operator.street}
+			<br />
+			{operator.city}
+			<br />
+			{operator.country}
+		</address>
+
+		<h2>Kontakt</h2>
+		<p>
+			Telefon: {operator.phone}
+			<br />
+			E-Mail: {operator.email}
+		</p>
+
+		{operator.vatId && (
+			<>
+				<h2>Umsatzsteuer-Identifikationsnummer</h2>
+				<p>Gemäß § 27 a Umsatzsteuergesetz: {operator.vatId}</p>
+			</>
+		)}
+
+		<h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+		<address>
+			{operator.name}
+			<br />
+			{operator.street}
+			<br />
+			{operator.city}
+		</address>
+
+		<h2>Verbraucherstreitbeilegung</h2>
+		<p>
+			Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle
+			teilzunehmen.
+		</p>
+
+		<h2>Haftung für Links</h2>
+		<p>
+			Diese Website enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Für diese
+			fremden Inhalte ist stets der jeweilige Anbieter verantwortlich. Bei Bekanntwerden von Rechtsverletzungen
+			entfernen wir derartige Links umgehend.
+		</p>
+
+		<nav>
+			<a href="/">Zurück zur Startseite</a> · <a href="/datenschutz">Datenschutzerklärung</a>
+		</nav>
+	</main>
+</Layout>
