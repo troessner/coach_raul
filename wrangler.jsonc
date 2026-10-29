@@ -1,0 +1,9 @@
+{
+	// Static assets only — there is no Worker script. Astro builds to dist/ and
+	// Cloudflare serves it straight from there.
+	"name": "coach-raul",
+	"compatibility_date": "2026-10-29",
+	"assets": {
+		"directory": "./dist",
+	},
+}

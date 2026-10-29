@@ -105,3 +105,13 @@ describe('every built page', () => {
 		}
 	});
 });
+
+describe('deploy config', () => {
+	it('ships the _headers file Cloudflare serves responses with', () => {
+		// It lives in public/, so a move or rename silently stops it reaching dist/
+		// and the site goes indexable without anything visibly breaking.
+		expect(read('_headers')).toContain('X-Robots-Tag: noindex');
+	});
+
+	it.todo('drops the noindex header once the placeholder content is gone');
+});
