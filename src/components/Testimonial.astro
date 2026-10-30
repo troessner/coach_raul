@@ -1,18 +1,30 @@
 ---
-import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import { imageUrl } from '../lib/sanity';
+import type { Testimonial } from '../lib/sanity';
 
-interface Props {
-	quote: string;
-	name: string;
-	photo: ImageMetadata;
-}
+type Props = Testimonial;
 
 const { quote, name, photo } = Astro.props;
+
+// Sanity's CDN does the resizing and the webp negotiation, so these bypass
+// astro:assets entirely — running both would download every image at build
+// time to re-encode what is already encoded.
+const src = imageUrl(photo, 480);
+const srcset = [320, 480, 640].map((w) => `${imageUrl(photo, w)} ${w}w`).join(', ');
 ---
 
 <figure class="testimonial">
-	<Image class="photo" src={photo} alt={name} widths={[320, 480]} sizes="(max-width: 700px) 45vw, 260px" />
+	<img
+		class="photo"
+		src={src}
+		srcset={srcset}
+		sizes="(max-width: 700px) 45vw, 260px"
+		alt={photo.alt}
+		width="320"
+		height="480"
+		loading="lazy"
+		decoding="async"
+	/>
 	<blockquote class="quote">{quote}</blockquote>
 	<figcaption class="name">{name}</figcaption>
 </figure>

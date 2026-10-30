@@ -3,7 +3,15 @@
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  X-Frame-Options: DENY
+  # SAMEORIGIN, not DENY: the Studio's Presentation tool previews the live site
+  # by iframing it from /studio. DENY blocks that and the preview pane renders
+  # blank with only a console error to say why.
+  X-Frame-Options: SAMEORIGIN
   # TODO: delete this line at launch. Until the placeholder testimonials, the
   # "#" CTAs and the TODO contact details are gone, nothing here may be indexed.
+  X-Robots-Tag: noindex
+
+# The Studio is a login-walled admin SPA. This rule is NOT the temporary one
+# above — it stays after launch.
+/studio/*
   X-Robots-Tag: noindex

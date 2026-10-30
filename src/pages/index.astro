@@ -1,71 +1,39 @@
 ---
 import { Image } from 'astro:assets';
+import { VisualEditing } from '@sanity/astro/visual-editing';
 import Layout from '../layouts/Layout.astro';
 import Logo from '../components/Logo.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import Testimonial from '../components/Testimonial.astro';
 import { operator, telHref, whatsAppHref } from '../legal';
+import { DRAFT_COOKIE, getPageContent } from '../lib/sanity';
 import heroPhoto from '../assets/hero.png';
 import portrait from '../assets/raul-portrait.png';
 import gymWeights from '../assets/gym-weights.png';
-import client1 from '../assets/testimonial-003.png';
-import client2 from '../assets/testimonial-004.png';
-import client3 from '../assets/testimonial-005.png';
-import client4 from '../assets/testimonial-006.png';
 
-// TODO: replace every '#' with its Stripe Payment Link before launch.
-const services = [
-	{
-		title: 'Personal Training',
-		body: "One-on-one training sessions tailored to your fitness level, goals, and lifestyle. Whether you want to build muscle, lose fat, or improve your overall fitness, I'll guide you every step of the way.",
-		href: '#',
-	},
-	{
-		title: 'Nutrition Coaching',
-		body: 'Personalized nutrition guidance to support your fitness goals, improve energy levels, and develop sustainable eating habits. No extreme diets, just a balanced approach to healthier living.',
-		href: '#',
-	},
-	{
-		title: 'Mindset & Motivation Coaching',
-		body: "Build confidence, discipline, and mental resilience. I'll help you overcome mental barriers, stay motivated, and develop the mindset needed for long-term success.",
-		href: '#',
-	},
-	{
-		title: '90-Day Transformation Challenge',
-		body: 'Ready to transform yourself in just 90 days? My structured transformation program combines strength training, functional fitness, personalized nutrition guidance, and mindset coaching to help you build muscle, improve endurance, develop healthy habits, and achieve measurable results.',
-		href: '#',
-	},
-];
+// Rendered per request, not at build time. That is what lets Raul hit Publish
+// in the Studio and see it live without a deploy — the whole reason this page
+// opts out of prerendering while the legal pages and the 404 do not.
+export const prerender = false;
 
-// TODO: replace with Raul's real Cal.com event link before launch.
-//
-// Deliberately a link and not an <iframe>: an embedded Cal.com frame fetches on
-// page load, which hands every visitor's IP to Cal.com before they have chosen
-// to go there. That is the same exposure the self-hosted font exists to avoid,
-// and it would make the "Keine Cookies, kein Tracking" section of
-// datenschutz.astro untrue. A link transmits nothing until it is clicked.
-const bookingHref = '#';
+const preview = Astro.cookies.get(DRAFT_COOKIE)?.value === 'true';
+const { settings, services, testimonials, socials } = await getPageContent(preview);
 
-// TODO: placeholder copy and stock photos, straight from the Canva design.
-// Swap for real client quotes and photos before launch.
-const placeholder =
-	"Boost your product and service's credibility by adding testimonials from your clients. People love recommendations so feedback from others who've tried it is invaluable.";
+if (preview) {
+	// Unpublished content must never be cached anywhere, by anyone.
+	Astro.response.headers.set('Cache-Control', 'private, no-store');
+} else {
+	// Cached at Cloudflare's edge for a minute, so a burst of traffic is one
+	// Sanity query rather than thousands. A publish therefore shows up within
+	// ~60s; drop this to 0 if that is ever too slow, at the cost of a query per
+	// page view.
+	Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+}
 
-const testimonials = [
-	{ quote: placeholder, name: 'Client name', photo: client1 },
-	{ quote: placeholder, name: 'Client name', photo: client2 },
-	{ quote: placeholder, name: 'Client name', photo: client3 },
-	{ quote: placeholder, name: 'Client name', photo: client4 },
-];
-
-// TODO: real profile URLs.
-const socials = [
-	{ network: 'facebook', label: 'Facebook', href: '#' },
-	{ network: 'x', label: 'X', href: '#' },
-	{ network: 'instagram', label: 'Instagram', href: '#' },
-	{ network: 'tiktok', label: 'TikTok', href: '#' },
-] as const;
+// The three images above stay local on purpose: they are design assets, not
+// content. Raul never swaps them from the Studio, and routing them through
+// Sanity would cost them the astro:assets optimisation they get for free here.
 ---
 
 <Layout
@@ -87,19 +55,23 @@ const socials = [
 			<Logo />
 			<div class="hero-copy">
 				<h1 class="display hero-title">
-					Get stronger
-					<br />
-					Get healthier
+					{settings.heroTitleLines.map((line, i) => (
+						<Fragment>
+							{i > 0 && <br />}
+							{line}
+						</Fragment>
+					))}
 				</h1>
 				<p class="hero-sub">
-					I offer personal &amp; group training
-					<br />
-					designed to help you get
-					<br />
-					Stronger &amp; Healthier
+					{settings.heroSubLines.map((line, i) => (
+						<Fragment>
+							{i > 0 && <br />}
+							{line}
+						</Fragment>
+					))}
 				</p>
 				<a class="cta" href="#classes">
-					Sign up now
+					{settings.heroCtaLabel}
 				</a>
 			</div>
 		</div>
@@ -121,24 +93,9 @@ const socials = [
 					Coach Raul Payares
 				</h2>
 				<div class="bio">
-					<p>Hi,</p>
-					<p>I'm Raul Payares, originally from Colombia and now based in Berlin.</p>
-					<p>
-						With over 15 years of experience in fitness and coaching, I've dedicated my career to helping people become
-						stronger, healthier, and more confident.
-					</p>
-					<p>
-						I specialize in strength and high intensity training, functional fitness, and mindset coaching, helping
-						people of all fitness levels achieve lasting results.
-					</p>
-					<p>
-						I believe fitness is more than just physical transformation. It's about building discipline, confidence,
-						mental resilience, and a healthier lifestyle.
-					</p>
-					<p>
-						My mission is simple: To help you build a stronger body, a stronger mind, and become the best version of
-						yourself.
-					</p>
+					{settings.bioParagraphs.map((paragraph) => (
+						<p>{paragraph}</p>
+					))}
 				</div>
 			</div>
 		</section>
@@ -157,7 +114,7 @@ const socials = [
 			<p class="classes-body">
 				Pick a time that suits you and book the slot — no account, no sign-up form. Booking opens in a new tab.
 			</p>
-			<a class="cta" href={bookingHref} rel="noopener noreferrer" target="_blank">
+			<a class="cta" href={settings.bookingUrl} rel="noopener noreferrer" target="_blank">
 				See class times
 			</a>
 		</section>
@@ -208,6 +165,7 @@ const socials = [
 			</nav>
 		</div>
 	</footer>
+	{preview && <VisualEditing />}
 </Layout>
 
 <style>
