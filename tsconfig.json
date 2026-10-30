@@ -1,5 +1,6 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
+  "//": "studio/ is a separate npm project with its own tsconfig and its own node_modules. Type-checking it from here resolves none of its imports.",
   "exclude": ["dist"]
 }

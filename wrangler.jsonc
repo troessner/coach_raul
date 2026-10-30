@@ -1,11 +1,10 @@
 {
-	// Static assets only — there is no Worker script. Astro builds to dist/ and
-	// Cloudflare serves it straight from there.
+	// Source config only. The Cloudflare Vite plugin derives `main` and the
+	// `assets` block from the Astro build and writes the real deploy config to
+	// dist/server/wrangler.json — setting them here instead makes the plugin
+	// resolve an entry point that does not exist until after the build.
 	"name": "coach-raul",
 	"compatibility_date": "2026-10-29",
-	"assets": {
-		"directory": "./dist",
-		// Without this Cloudflare serves its own unstyled 404 instead of ours.
-		"not_found_handling": "404-page",
-	},
+	// The Sanity client reaches for node builtins.
+	"compatibility_flags": ["nodejs_compat"],
 }

@@ -13,16 +13,16 @@ The site has to do four things that a Canva-published page cannot: take payments
 stay editable by a non-developer, and be something we control the source of. It does **not** need
 user accounts — that decision is what keeps the stack this small.
 
-| Concern         | Choice                   | Notes                                                              |
-| --------------- | ------------------------ | ------------------------------------------------------------------ |
-| Site            | **Astro 7**              | Static output, zero JS shipped by default                          |
-| Styling         | **Plain scoped CSS**     | One page didn't justify Tailwind. Tokens in `Layout.astro`         |
-| Content editing | **Sanity** _(planned)_   | Studio in-repo at `/studio` so Raul edits without a deploy         |
-| Payments        | **Stripe Payment Links** | Hosted checkout, no backend, no webhooks, no card data             |
-| Booking         | **Cal.com**              | Linked, not embedded — an iframe would leak visitor IPs on load    |
-| Contact         | **`mailto:` / WhatsApp** | No backend to post a form to, and nothing yet needs one            |
-| Hosting         | **Cloudflare Workers**   | Static assets from `dist/`; no Worker script, see `wrangler.jsonc` |
-| Database        | **None**                 | Stripe, Cal.com and Sanity each hold their own state               |
+| Concern         | Choice                   | Notes                                                            |
+| --------------- | ------------------------ | ---------------------------------------------------------------- |
+| Site            | **Astro 7**              | Static output, zero JS shipped by default                        |
+| Styling         | **Plain scoped CSS**     | One page didn't justify Tailwind. Tokens in `Layout.astro`       |
+| Content editing | **Sanity**               | Studio at `/studio`; publish is live immediately, no deploy      |
+| Payments        | **Stripe Payment Links** | Hosted checkout, no backend, no webhooks, no card data           |
+| Booking         | **Cal.com**              | Linked, not embedded — an iframe would leak visitor IPs on load  |
+| Contact         | **`mailto:` / WhatsApp** | No backend to post a form to, and nothing yet needs one          |
+| Hosting         | **Cloudflare Workers**   | Home page renders per request; everything else is a static asset |
+| Database        | **None**                 | Stripe, Cal.com and Sanity each hold their own state             |
 
 Class signups go through Cal.com rather than a form writing to our own database. Cal.com enforces
 seats per slot, sends the confirmations and reminders, syncs Raul's calendar, gives him a dashboard
@@ -48,6 +48,8 @@ not a move to another platform.
 - [x] Responsive down to phone width
 - [x] Automatic responsive image optimization (PNG → WebP, ~6.9 MB → ~700 KB)
 - [x] CI: formatting, type-check, build, tests
+- [x] Sanity CMS — hero copy, bio, services, success stories and social links are all editable
+- [x] Side-by-side preview of unpublished edits, and publishing without a deploy
 
 ### Requested, not yet built
 
@@ -77,13 +79,117 @@ assertion as the content lands:
 - [ ] Hero photo replaced — the current one is an AI composite with a cropped-off Meta AI watermark
 - [ ] `gym-weights.png` swapped for an Unsplash/Pexels equivalent (Canva stock licensing is scoped to Canva designs)
 
+## CMS
+
+Content lives in Sanity. **Publishing is live immediately — there is no deploy and no rebuild.**
+That is the whole reason the home page renders per request instead of being baked at build time.
+
+### How the rendering splits
+
+| Route                           | Rendering         | Why                                           |
+| ------------------------------- | ----------------- | --------------------------------------------- |
+| `/`                             | per request       | Reads the CMS, so a publish has to show up    |
+| `/impressum/`, `/datenschutz/`  | prerendered       | Content comes from `src/legal.ts`, not Sanity |
+| `/404`                          | prerendered       | Static                                        |
+| `/studio`                       | prerendered shell | The Studio itself is a client-side React SPA  |
+| `/api/draft/enable`, `/disable` | per request       | Set and clear the preview cookie              |
+
+Only `/` costs a Worker invocation on a normal visit, and its HTML is cached at Cloudflare's edge
+for 60 seconds (`s-maxage=60, stale-while-revalidate=600`). A publish is therefore visible within
+about a minute. Set that to `0` in `src/pages/index.astro` if it ever needs to be instant — the
+cost is one Sanity query per page view instead of one per minute.
+
+### Preview
+
+The Studio is mounted at **`/studio`**, on the same origin as the site. Sanity's Presentation tool
+iframes the live site next to the editor and swaps content in as it is typed, before anything is
+published.
+
+Same-origin is deliberate: a Studio on `*.sanity.studio` previewing a site on another domain needs
+CORS entries and a `SameSite=None` cookie, and this needs neither. It is also why `public/_headers`
+sets `X-Frame-Options: SAMEORIGIN` rather than `DENY` — `DENY` blocks the preview iframe and the
+pane renders blank with only a console error to explain it.
+
+The preview flow:
+
+1. Presentation mints a single-use secret and stores it in the dataset.
+2. It opens `/api/draft/enable?sanity-preview-secret=…`.
+3. That route validates the secret **against the dataset** and only then sets an httpOnly cookie.
+4. While the cookie is set, `/` queries the `drafts` perspective with a read token and renders the
+   visual-editing overlay. Nothing is cached (`private, no-store`).
+5. `/api/draft/disable` clears it.
+
+Validating the secret is what stops the route being an open switch for serving unpublished content
+to anyone who guesses the path.
+
+### What is editable
+
+| Document       | Holds                                                                          |
+| -------------- | ------------------------------------------------------------------------------ |
+| `siteSettings` | Hero headline and subline (one entry per line), button label, bio, booking URL |
+| `service`      | The four service cards — title, body, Stripe link, position                    |
+| `testimonial`  | Success stories — quote, client name, photo, position                          |
+| `social`       | Footer icons — network, accessible label, profile URL, position                |
+
+Hero, portrait and footer photos are **not** in the CMS. They are design assets rather than content,
+and keeping them local preserves the `astro:assets` optimization. Testimonial photos do go through
+Sanity, served from its CDN — which is why `Testimonial.astro` uses a plain `<img>` with a `srcset`
+rather than `<Image />`. Running both pipelines would download every image at build time to
+re-encode what Sanity already encoded.
+
+### First-time setup
+
+```sh
+npx sanity@latest init     # creates the project, prints a projectId
+cp .env.example .env       # fill in projectId and a read token
+npm run dev                # Studio at localhost:4321/studio
+```
+
+Then import the copy that used to be hardcoded, so the Studio does not start empty:
+
+```sh
+SANITY_WRITE_TOKEN=... node scripts/seed-sanity.mjs
+```
+
+### Environment
+
+| Variable                   | Where                               | Secret?                            |
+| -------------------------- | ----------------------------------- | ---------------------------------- |
+| `PUBLIC_SANITY_PROJECT_ID` | local `.env`, Cloudflare build vars | no                                 |
+| `PUBLIC_SANITY_DATASET`    | local `.env`, Cloudflare build vars | no                                 |
+| `SANITY_READ_TOKEN`        | local `.env`, Cloudflare **secret** | **yes** — reads unpublished drafts |
+| `SANITY_WRITE_TOKEN`       | nowhere but your shell, once        | **yes** — revoke after seeding     |
+
+Set the read token as an encrypted secret, not a build variable:
+
+```sh
+npx wrangler secret put SANITY_READ_TOKEN
+```
+
+GitHub Actions sets placeholder values for the two public ones. That is honest rather than lazy:
+the build never queries Sanity, because the only CMS-driven page renders per request.
+
+### Placeholder links
+
+The seed writes reserved `example.com` URLs rather than `#` for every link that does not exist yet
+(Stripe, Cal.com, social profiles). A `#` renders as a button that looks live and does nothing;
+`example.com` is visibly unfinished, and a launch gate in `tests/home-page.test.ts` asserts none of
+them survive.
+
+### A missing variable fails the request, deliberately
+
+`src/lib/sanity.ts` throws when `PUBLIC_SANITY_PROJECT_ID` is unset, and every query throws on an
+empty result rather than returning one. The alternative — falling back to placeholder content —
+serves a page that looks fine while the CMS behind it does nothing. `tests/sanity.test.ts` pins
+that behaviour.
+
 ## Build order
 
 The remaining work has a deliberate sequence. Each step assumes the one before it:
 
 1. ~~**Static page from the design**~~ — done. Real markup, hardcoded content.
-2. **Sanity.** Studio in-repo at `/studio`. Model the schema on the arrays already at the top of
-   `src/pages/index.astro` — the markup exists first precisely so the content model isn't guesswork.
+2. ~~**Sanity.**~~ — done. Schema mirrors the arrays that used to sit at the top of
+   `src/pages/index.astro`; see the CMS section below.
 3. **Stripe Payment Links + Cal.com.** Paste the links into the service cards. If a service needs
    prepaid slot booking rather than a one-off purchase, use Cal.com's Stripe integration for it
    instead of a bare Payment Link. Cal.com is **linked, not embedded** — see below.
@@ -124,15 +230,30 @@ Pushes to `main` build and deploy automatically through Cloudflare Workers Build
 
 Live at **https://coach-raul.timo-roessner.workers.dev** — temporary, and `noindex`ed.
 
+The build emits two directories, which is a change from when the whole site was static:
+
+- `dist/client/` — static assets, the prerendered pages, `_headers`, the Studio bundle
+- `dist/server/` — the Worker that renders `/`, plus a generated `wrangler.json`
+
+That generated config is the one that gets deployed. **`wrangler.jsonc` in the repo root
+deliberately sets no `main` and no `assets`**: the Cloudflare Vite plugin derives both from the
+build, and hardcoding them makes it try to resolve an entry point that does not exist until the
+build has already run.
+
 - `astro.config.mjs` — `site` feeds the canonical URL and `og:url`. **It currently points at the
   workers.dev hostname**; swap it the day a real domain is attached, or the two will compete in
   search results.
-- `wrangler.jsonc` — project name and the assets directory. There is no Worker script; the site
-  is static assets served straight from `dist/`.
 - `.nvmrc` — pins Node 22, matching CI. Cloudflare's default is older than `engines` allows.
-- `public/_headers` — response headers Cloudflare applies to every request. Astro copies it into
-  `dist/`, where Cloudflare looks for it. **It currently carries `X-Robots-Tag: noindex`**, which
-  keeps the placeholder content out of search results. Removing that line is the last step of launch.
+- `public/_headers` — response headers. Two separate noindex rules: a temporary site-wide one that
+  comes off at launch, and a permanent one on `/studio/*` that does not.
+
+Cloudflare needs, once:
+
+- `PUBLIC_SANITY_PROJECT_ID` and `PUBLIC_SANITY_DATASET` as build variables
+- `SANITY_READ_TOKEN` as an encrypted secret (`npx wrangler secret put SANITY_READ_TOKEN`)
+
+Astro's session storage is enabled by the adapter and backed by a `SESSION` KV namespace that
+Cloudflare provisions on first deploy. Nothing here uses sessions; it costs nothing to leave alone.
 
 Cloudflare builds `main` without running the tests. The GitHub Actions workflow is the gate, and it
 only runs on pull requests — so keep merging through PRs rather than pushing to `main`.
@@ -172,14 +293,28 @@ src/
 │   ├── 404.astro          served by Cloudflare via not_found_handling
 │   ├── impressum.astro    § 5 DDG anbieterkennzeichnung
 │   └── datenschutz.astro  Art. 13 DSGVO privacy notice
+├── lib/
+│   └── sanity.ts      published + draft clients, typed GROQ, image URLs, guards
+├── sanity/
+│   └── schemaTypes/   one file per document type
 └── legal.ts            operator name, address and contact, shared by both legal pages
+sanity.config.ts        Studio wiring: Presentation preview + the siteSettings singleton
+scripts/
+└── seed-sanity.mjs     one-shot import of the formerly hardcoded copy
 tests/
-└── build-output.test.ts    assertions against the built HTML
+├── home-page.test.ts       the home page, rendered through Astro's container
+├── build-output.test.ts    the prerendered pages, read from dist/client/
+├── legal.test.ts           phone/WhatsApp link transforms
+└── sanity.test.ts          the env and empty-result guards
 ```
 
-Section content (services, testimonials, socials) sits in plain arrays at the top of
-`index.astro`. That is intentional: it keeps content in one place, and those arrays are the shape
-the Sanity schema should mirror when it lands.
+`src/pages/index.astro` renders per request; `tests/home-page.test.ts` therefore renders it through
+Astro's container against a fixture rather than reading a file out of `dist/`. That is also why
+`astro.config.mjs` skips the Cloudflare adapter when `VITEST` is set — its Vite plugin otherwise
+takes the test runner into workerd, where the runner's own entry point cannot load.
+
+Section content used to sit in plain arrays at the top of `index.astro`. It now comes from Sanity,
+and the schema in `studio/schemaTypes/` mirrors the shape those arrays had.
 
 ## Design source
 

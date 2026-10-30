@@ -10,6 +10,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The build never queries Sanity: the only CMS-driven page renders per request,
+# not at build time. These placeholders exist because astro.config.mjs and the
+# Studio route want a project id present, not because anything reads this
+# dataset. The real values live in the Cloudflare build environment.
+env:
+  PUBLIC_SANITY_PROJECT_ID: ci-placeholder
+  PUBLIC_SANITY_DATASET: production
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,6 +41,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Asserts against dist/, so it has to follow the build.
+      # The prerendered-page assertions read dist/, so they follow the build.
       - name: Test
         run: npm test

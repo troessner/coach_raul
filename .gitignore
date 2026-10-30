@@ -7,6 +7,9 @@ dist/
 # dependencies
 node_modules/
 
+# wrangler / miniflare local state, written by builds and `astro dev`
+.wrangler/
+
 # scratch files (PR bodies, commit messages) written by the publish/amend skills
 tmp/
 
