@@ -19,10 +19,18 @@ user accounts — that decision is what keeps the stack this small.
 | Styling         | **Plain scoped CSS**     | One page didn't justify Tailwind. Tokens in `Layout.astro`         |
 | Content editing | **Sanity** _(planned)_   | Studio in-repo at `/studio` so Raul edits without a deploy         |
 | Payments        | **Stripe Payment Links** | Hosted checkout, no backend, no webhooks, no card data             |
-| Booking         | **Cal.com** _(planned)_  | Open source, embeddable, can carry Stripe prepayment               |
+| Booking         | **Cal.com**              | Linked, not embedded — an iframe would leak visitor IPs on load    |
 | Contact         | **`mailto:` / WhatsApp** | No backend to post a form to, and nothing yet needs one            |
 | Hosting         | **Cloudflare Workers**   | Static assets from `dist/`; no Worker script, see `wrangler.jsonc` |
 | Database        | **None**                 | Stripe, Cal.com and Sanity each hold their own state               |
+
+Class signups go through Cal.com rather than a form writing to our own database. Cal.com enforces
+seats per slot, sends the confirmations and reminders, syncs Raul's calendar, gives him a dashboard
+he can read without us, and exports CSV when we want the numbers. A self-built version would mean a
+server runtime, a database, a capacity check that must not double-book under concurrency, spam
+protection on a public endpoint, and a second processor in the Datenschutzerklärung — to arrive at
+the same place. If we ever do need our own table, it is Cloudflare D1 on the host we already use,
+not a move to another platform.
 
 ## Feature status
 
@@ -33,6 +41,7 @@ user accounts — that decision is what keeps the stack this small.
 - [x] Four service cards (Personal Training, Nutrition, Mindset, 90-Day Challenge)
 - [x] Success stories grid (4 testimonials)
 - [x] Footer with logo, "Stay connected", social icons and legal links
+- [x] Group classes section linking out to Cal.com booking — link still a `#` placeholder
 - [x] Impressum and Datenschutzerklärung (German, as the law requires) — details still placeholders
 - [x] Contact links in the footer — email, phone, WhatsApp — details still placeholders
 - [x] Self-hosted Archivo — no request leaves the visitor's browser for a Google domain
@@ -44,7 +53,7 @@ user accounts — that decision is what keeps the stack this small.
 
 | #   | Feature             | Plan                                                                                                               |
 | --- | ------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 1   | Registrations       | A form (Sanity-backed or a hosted form) — **not** user accounts                                                    |
+| 1   | Registrations       | Answered: class slot booking, via Cal.com seats. Section built; needs the real event link                          |
 | 2   | Payment links       | One Stripe Payment Link per service, wired to each `GET STARTED`                                                   |
 | 3   | Intro video         | Section between hero and bio; YouTube/Vimeo embed                                                                  |
 | 4   | Real client reviews | Replace the Canva placeholder copy and stock photos                                                                |
@@ -59,6 +68,9 @@ assertion as the content lands:
 - [ ] `X-Robots-Tag: noindex` removed from `public/_headers` — do this **last**, once
       everything else here is ticked
 - [ ] `src/legal.ts` carries Raul's real address, phone and email — the Impressum is unusable without them
+- [ ] `bookingHref` in `src/pages/index.astro` points at the real Cal.com event instead of `#`
+- [ ] The Art. 28 AVV with Cal.com is signed, and the Kursbuchung section of `datenschutz.astro`
+      matches reality (see the TODOs in its frontmatter)
 - [ ] Every CTA points at a real Stripe Payment Link instead of `#`
 - [ ] Real testimonials replace the Canva placeholder copy and stock portraits
 - [ ] Each social icon links to a real profile
@@ -72,10 +84,17 @@ The remaining work has a deliberate sequence. Each step assumes the one before i
 1. ~~**Static page from the design**~~ — done. Real markup, hardcoded content.
 2. **Sanity.** Studio in-repo at `/studio`. Model the schema on the arrays already at the top of
    `src/pages/index.astro` — the markup exists first precisely so the content model isn't guesswork.
-3. **Stripe Payment Links + Cal.com embed.** Paste the links into the service cards. If a service
-   needs prepaid slot booking rather than a one-off purchase, use Cal.com's Stripe integration for it
-   instead of a bare Payment Link.
+3. **Stripe Payment Links + Cal.com.** Paste the links into the service cards. If a service needs
+   prepaid slot booking rather than a one-off purchase, use Cal.com's Stripe integration for it
+   instead of a bare Payment Link. Cal.com is **linked, not embedded** — see below.
 4. **Intro video section**, between hero and bio.
+
+Cal.com is reached by a link rather than an `<iframe>`, and `tests/build-output.test.ts` asserts no
+iframe reaches the built page. An embedded frame fetches on page load, so every visitor's IP goes to
+Cal.com whether or not they ever intended to book — the same exposure that made remote Google Fonts
+a standing Abmahnung risk, and it would falsify the "Keine Cookies, kein Tracking" section of the
+Datenschutzerklärung. The same constraint applies to the intro video in step 4: a bare YouTube
+embed is the identical problem and needs a click-to-load wrapper or a link.
 
 A contact _form_ was considered and dropped. The footer's `mailto:`, `tel:` and WhatsApp links do
 the same job with no endpoint, no Mailgun account, no secret to rotate, no spam filtering and no
@@ -95,8 +114,9 @@ None of these are blocked on engineering:
 - A Stripe account, plus the price of each service
 - The intro video
 - A replacement hero photo (see the launch checklist)
-- Confirmation of what "registrations" means — a signup form, or booking a specific class slot.
-  The answer decides between a plain form and a Cal.com embed in step 3.
+- A Cal.com account with the class event type configured (**Offer Seats** set to the class size,
+  which is on the free plan), the public event URL, and the signed Art. 28 AVV. Confirm whether
+  recurring events are available on the plan he ends up on — sources disagreed on that one
 
 ## Deployment
 
