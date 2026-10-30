@@ -74,7 +74,18 @@ describe('built home page', () => {
 		expect(html).toContain('href="https://wa.me/');
 	});
 
+	it('offers class booking as a plain link, never an embedded frame', () => {
+		// An embedded Cal.com (or YouTube) iframe fetches on page load and hands
+		// every visitor's IP to a third party before they chose to go there — the
+		// same exposure the self-hosted font exists to avoid, and it would falsify
+		// the "Keine Cookies, kein Tracking" section of the Datenschutzerklärung.
+		// If the intro video lands as a bare iframe, this is meant to fail.
+		expect(html).toContain('id="classes"');
+		expect(html).not.toMatch(/<iframe/);
+	});
+
 	// Launch gates — unskip each one as the real content lands. See README.
+	it.todo('points the class booking link at the real Cal.com event, not "#"');
 	it.todo('points every call to action at a real Stripe Payment Link, not "#"');
 	it.todo('ships real client testimonials instead of the Canva placeholder copy');
 	it.todo('links each social icon to a real profile URL');
@@ -93,6 +104,14 @@ describe('legal pages', () => {
 	it('cross-links the two pages', () => {
 		expect(impressum).toContain('href="/datenschutz/"');
 		expect(datenschutz).toContain('href="/impressum/"');
+	});
+
+	it('names the booking processor and the legal basis for it', () => {
+		// Art. 13 DSGVO: a new processor touching personal data has to be named on
+		// the page before it starts touching any. Adding the link without this is
+		// the actual violation, not the link itself.
+		expect(datenschutz).toContain('Cal.com');
+		expect(datenschutz).toContain('Art. 6 Abs. 1 lit. b DSGVO');
 	});
 
 	it.todo("carries Raul's real address, phone and email instead of TODO placeholders");

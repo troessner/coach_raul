@@ -5,6 +5,13 @@ import { operator } from '../legal';
 // TODO: add a "Kontaktformular" section when src/pages/api/contact.ts lands —
 // Art. 13 DSGVO needs the purpose, the legal basis and the retention period for
 // anything the form collects.
+//
+// TODO: before launch, three things have to be true of the Kursbuchung section
+// below, and none of them can be checked from here:
+//   1. the Art. 28 AVV with Cal.com is actually signed,
+//   2. Cal.com, Inc.'s address matches the one in their current DPA,
+//   3. if the event sits on Cal.com's EU data residency, the US-transfer
+//      sentence is wrong and should be cut rather than left in as decoration.
 ---
 
 <Layout
@@ -46,6 +53,23 @@ import { operator } from '../legal';
 			verarbeitet die oben genannten Daten als Auftragsverarbeiter auf Grundlage eines Vertrags nach Art. 28 DSGVO. Eine
 			Übermittlung in die USA erfolgt auf Grundlage des EU-US Data Privacy Framework sowie der Standardvertragsklauseln
 			der Europäischen Kommission.
+		</p>
+
+		<h2>Kursbuchung</h2>
+		<p>
+			Die Buchung von Kursterminen findet nicht auf dieser Website statt, sondern beim Dienst Cal.com (Cal.com, Inc.,
+			2261 Market Street, San Francisco, CA 94114, USA). Auf dieser Seite steht lediglich ein Link dorthin — es handelt
+			sich ausdrücklich nicht um ein eingebettetes Buchungsfenster. An Cal.com werden erst dann Daten übertragen, wenn
+			Sie diesen Link aktiv anklicken.
+		</p>
+		<p>
+			Buchen Sie dort einen Termin, verarbeiten wir die von Ihnen angegebenen Daten — in der Regel Name, E-Mail-Adresse
+			und der gewählte Termin — zur Durchführung der Buchung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung
+			eines Vertrags beziehungsweise Durchführung vorvertraglicher Maßnahmen). Cal.com verarbeitet diese Daten als
+			Auftragsverarbeiter auf Grundlage eines Vertrags nach Art. 28 DSGVO. Eine Übermittlung in die USA erfolgt auf
+			Grundlage des EU-US Data Privacy Framework sowie der Standardvertragsklauseln der Europäischen Kommission.
+			Buchungsdaten werden gelöscht, sobald sie für die Durchführung des Kurses und die Erfüllung gesetzlicher
+			Aufbewahrungsfristen nicht mehr erforderlich sind.
 		</p>
 
 		<h2>Keine Cookies, kein Tracking</h2>
