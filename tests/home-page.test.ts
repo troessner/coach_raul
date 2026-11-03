@@ -46,6 +46,7 @@ vi.mock('../src/lib/sanity', async (importOriginal) => {
 });
 
 let html = '';
+let response: Response;
 
 beforeAll(async () => {
 	// Layout.astro derives the canonical URL from Astro.site, which the
@@ -54,6 +55,7 @@ beforeAll(async () => {
 	const { default: Index } = await import('../src/pages/index.astro');
 
 	html = await container.renderToString(Index, { request: new Request('https://coach-raul.test/') });
+	response = await container.renderToResponse(Index, { request: new Request('https://coach-raul.test/') });
 });
 
 describe('rendered home page', () => {
@@ -111,4 +113,18 @@ describe('rendered home page', () => {
 	// Launch gates — unskip each one as the real content lands. See README.
 	it.todo('replaces every example.com placeholder link with a real URL');
 	it.todo('ships real client testimonials instead of the Canva placeholder copy');
+});
+
+describe('response headers', () => {
+	// public/_headers covers static assets only. This page is rendered by the
+	// Worker, so it never sees that file — these assertions are the only thing
+	// standing between a placeholder page and Google's index.
+	it('is not indexable while the content is still placeholder', () => {
+		expect(response.headers.get('X-Robots-Tag')).toBe('noindex');
+	});
+
+	it('allows same-origin framing so the Studio preview pane renders', () => {
+		// DENY here blanks the Presentation pane with only a console error.
+		expect(response.headers.get('X-Frame-Options')).toBe('SAMEORIGIN');
+	});
 });

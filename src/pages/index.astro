@@ -17,6 +17,14 @@ import gymWeights from '../assets/gym-weights.png';
 // opts out of prerendering while the legal pages and the 404 do not.
 export const prerender = false;
 
+// public/_headers only reaches static asset responses, so a Worker-rendered
+// page inherits none of it. Both of these have to be set here or this page —
+// the one page still carrying placeholder content — is indexable and framable
+// while every prerendered page around it is not. Drop the noindex at launch,
+// at the same time as the site-wide one in public/_headers.
+Astro.response.headers.set('X-Robots-Tag', 'noindex');
+Astro.response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+
 const preview = Astro.cookies.get(DRAFT_COOKIE)?.value === 'true';
 const { settings, services, testimonials, socials } = await getPageContent(preview);
 
