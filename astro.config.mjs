@@ -3,6 +3,15 @@ import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
 import sanity from '@sanity/astro';
+import { loadEnv } from 'vite';
+
+// astro.config.mjs runs before Astro populates import.meta.env, and Astro never
+// writes .env into process.env — so reading process.env here finds nothing
+// locally and the Sanity client is constructed without a projectId. It only
+// looked fine on Cloudflare, where the build variables are real process env.
+// loadEnv reads the .env files *and* merges matching process.env keys, so one
+// call covers local dev, local build, CI and Cloudflare alike.
+const env = loadEnv(process.env.NODE_ENV ?? 'production', process.cwd(), 'PUBLIC_');
 
 // https://astro.build/config
 export default defineConfig({
@@ -23,8 +32,8 @@ export default defineConfig({
 
 	integrations: [
 		sanity({
-			projectId: process.env.PUBLIC_SANITY_PROJECT_ID,
-			dataset: process.env.PUBLIC_SANITY_DATASET ?? 'production',
+			projectId: env.PUBLIC_SANITY_PROJECT_ID,
+			dataset: env.PUBLIC_SANITY_DATASET ?? 'production',
 			useCdn: true,
 			// Mounts the Studio at /studio from ./sanity.config.ts. Same origin as
 			// the site it previews, which is what lets the preview cookie work
