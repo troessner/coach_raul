@@ -19,9 +19,18 @@ export default defineConfig({
 			// Side-by-side editing: the Studio iframes the real site and swaps
 			// content as it is typed, before anything is published.
 			previewUrl: {
-				origin: 'same-origin',
-				preview: '/',
-				previewMode: { enable: '/api/draft/enable' },
+				// No origin: it defaults to location.origin, which is already the site
+				// this Studio is mounted on. Naming one would hardcode the deploy
+				// hostname and break the day a real domain is attached.
+				//
+				// 'same-origin' was not a keyword — `origin` takes a URL, so that
+				// string crashed the tool when it tried to parse one. `origin` and
+				// `preview` are both deprecated in favour of `initial`.
+				initial: '/',
+				previewMode: {
+					enable: '/api/draft/enable',
+					disable: '/api/draft/disable',
+				},
 			},
 		}),
 		structureTool({
