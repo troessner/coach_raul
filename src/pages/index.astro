@@ -7,8 +7,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import Testimonial from '../components/Testimonial.astro';
 import { operator, telHref, whatsAppHref } from '../legal';
-import { DRAFT_COOKIE, getPageContent } from '../lib/sanity';
-import heroPhoto from '../assets/hero.png';
+import { DRAFT_COOKIE, getPageContent, imageUrl } from '../lib/sanity';
 import portrait from '../assets/raul-portrait.png';
 import gymWeights from '../assets/gym-weights.png';
 
@@ -39,9 +38,16 @@ if (preview) {
 	Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
 }
 
-// The three images above stay local on purpose: they are design assets, not
+// The two images above stay local on purpose: they are design assets, not
 // content. Raul never swaps them from the Studio, and routing them through
 // Sanity would cost them the astro:assets optimisation they get for free here.
+// The hero is the exception — it is the one photo he is expected to change, so
+// it comes from the CMS and is served by Sanity's CDN instead.
+// Capped at 1600: Sanity's `fit: max` never upscales, so a wider entry would
+// advertise a width the asset cannot deliver and the browser would pick it
+// believing it is larger. The current hero is 1285px on its long edge.
+const heroSizes = [640, 1024, 1600];
+const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}w`).join(', ');
 ---
 
 <Layout
@@ -49,12 +55,14 @@ if (preview) {
 	description="Personal training, nutrition and mindset coaching in Berlin. 15+ years helping people build a stronger body and a stronger mind."
 >
 	<header class="hero">
-		<Image
+		<!-- No width/height: .hero-photo is absolutely positioned and fills the
+		     header, so there is no layout for an intrinsic size to shift. -->
+		<img
 			class="hero-photo"
-			src={heroPhoto}
-			alt="Coach Raul Payares training with a client"
-			widths={[640, 1024, heroPhoto.width]}
+			src={imageUrl(settings.heroImage, 1600)}
+			srcset={heroSrcset}
 			sizes="100vw"
+			alt={settings.heroImage.alt}
 			loading="eager"
 			fetchpriority="high"
 		/>
