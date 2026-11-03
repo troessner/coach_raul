@@ -37,6 +37,33 @@ describe('sanity configuration guards', () => {
 		);
 	});
 
+	it('falls back to the runtime env when the secret was not present at build time', async () => {
+		vi.stubEnv('PUBLIC_SANITY_PROJECT_ID', 'abc123');
+		const { resolveSecret } = await import('../src/lib/sanity');
+
+		// The Cloudflare case: a runtime secret does not exist when the bundle is
+		// built, so import.meta.env cannot carry it and process.env must.
+		expect(resolveSecret({}, { SANITY_READ_TOKEN: 'from-runtime' }, 'SANITY_READ_TOKEN')).toBe('from-runtime');
+	});
+
+	it('prefers the build-time value when both are present', async () => {
+		vi.stubEnv('PUBLIC_SANITY_PROJECT_ID', 'abc123');
+		const { resolveSecret } = await import('../src/lib/sanity');
+
+		// Local dev, where .env is the thing the developer is editing.
+		expect(
+			resolveSecret({ SANITY_READ_TOKEN: 'from-env' }, { SANITY_READ_TOKEN: 'from-runtime' }, 'SANITY_READ_TOKEN'),
+		).toBe('from-env');
+	});
+
+	it('throws naming the variable when neither side has it', async () => {
+		vi.stubEnv('PUBLIC_SANITY_PROJECT_ID', 'abc123');
+		const { resolveSecret } = await import('../src/lib/sanity');
+
+		// This is the production 500 that crashed the Presentation tool.
+		expect(() => resolveSecret({}, undefined, 'SANITY_READ_TOKEN')).toThrow(/SANITY_READ_TOKEN is not set/);
+	});
+
 	it('rejects an empty result set instead of rendering an empty section', async () => {
 		vi.stubEnv('PUBLIC_SANITY_PROJECT_ID', 'abc123');
 		const { requireRows } = await import('../src/lib/sanity');

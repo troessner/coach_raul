@@ -67,8 +67,12 @@ not a move to another platform.
 These are encoded as `it.todo(...)` entries in `tests/build-output.test.ts`. Turn each into a real
 assertion as the content lands:
 
-- [ ] `X-Robots-Tag: noindex` removed from `public/_headers` — do this **last**, once
-      everything else here is ticked
+- [ ] `X-Robots-Tag: noindex` removed from **both** `public/_headers` _and_
+      `src/pages/index.astro` — the home page renders per request and never sees
+      `_headers`. Do this **last**, once everything else here is ticked
+- [ ] Domain swap, when a real domain is attached — four things change together:
+      `site` in `astro.config.mjs`, the Sanity **CORS origin**, the Sanity
+      **Studio host URL**, and the canonical/`og:url` they feed
 - [ ] `src/legal.ts` carries Raul's real address, phone and email — the Impressum is unusable without them
 - [ ] `bookingHref` in `src/pages/index.astro` points at the real Cal.com event instead of `#`
 - [ ] The Art. 28 AVV with Cal.com is signed, and the Kursbuchung section of `datenschutz.astro`
@@ -165,6 +169,24 @@ SANITY_WRITE_TOKEN=... node scripts/seed-sanity.mjs
 | `PUBLIC_SANITY_DATASET`    | local `.env`, Cloudflare build vars | no                                 |
 | `SANITY_READ_TOKEN`        | local `.env`, Cloudflare **secret** | **yes** — reads unpublished drafts |
 | `SANITY_WRITE_TOKEN`       | nowhere but your shell, once        | **yes** — revoke after seeding     |
+
+### Build-time config and runtime secrets are different places
+
+This has now caused two production-only failures, so it is worth stating plainly:
+
+| Source                      | Reaches                         | Does **not** reach                     |
+| --------------------------- | ------------------------------- | -------------------------------------- |
+| Local `.env`                | `import.meta.env` at build time | anything at request time on Cloudflare |
+| Cloudflare **build** vars   | `import.meta.env` at build time | the deployed Worker                    |
+| Cloudflare **runtime** vars | `process.env` per request       | the build                              |
+
+`PUBLIC_SANITY_PROJECT_ID` is baked into the bundle at build time, so it is a
+**build** variable. `SANITY_READ_TOKEN` is read per request, so it is a
+**runtime** secret and `import.meta.env` can never see it — `resolveSecret()`
+in `src/lib/sanity.ts` checks both sides for exactly this reason.
+
+Anything read in `astro.config.mjs` is a third case again: that file runs before
+Astro populates `import.meta.env`, which is why it uses Vite's `loadEnv`.
 
 Set the read token as an encrypted secret, not a build variable:
 

@@ -28,6 +28,25 @@ export const requireEnv = (env: Record<string, string | undefined>, name: string
 	return value;
 };
 
+/**
+ * Reads a secret that may arrive from either side of the build boundary.
+ *
+ * import.meta.env is baked at build time — that is where a local .env lands,
+ * and why the project id can be read straight from it. A Cloudflare runtime
+ * secret does not exist at build time at all: it is handed to the Worker per
+ * request and surfaces on process.env, which nodejs_compat populates for any
+ * compatibility date from 2025-04-01 onward.
+ *
+ * Reading only one of the two works in exactly one environment: import.meta.env
+ * alone is fine locally and throws on every request in production, which is
+ * what made the Presentation tool crash with a 500 rather than a 401.
+ */
+export const resolveSecret = (
+	buildEnv: Record<string, string | undefined>,
+	runtimeEnv: Record<string, string | undefined> | undefined,
+	name: string,
+): string => requireEnv({ [name]: buildEnv[name] || runtimeEnv?.[name] }, name);
+
 /** Set by /api/draft/enable, cleared by /api/draft/disable. Server-read only. */
 export const DRAFT_COOKIE = 'sanity-draft-mode';
 
@@ -59,7 +78,7 @@ const draftClient = (): SanityClient =>
 		// a version of them from seconds ago.
 		useCdn: false,
 		perspective: 'drafts',
-		token: requireEnv(import.meta.env, 'SANITY_READ_TOKEN'),
+		token: resolveSecret(import.meta.env, globalThis.process?.env, 'SANITY_READ_TOKEN'),
 		// Encodes document and field ids invisibly into every string, which is what
 		// lets the Presentation overlay turn rendered text into a click-to-edit
 		// target. Never enabled outside preview — it would ship the ids to visitors.
