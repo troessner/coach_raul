@@ -48,7 +48,7 @@ not a move to another platform.
 - [x] Responsive down to phone width
 - [x] Automatic responsive image optimization (PNG → WebP, ~6.9 MB → ~700 KB)
 - [x] CI: formatting, type-check, build, tests
-- [x] Sanity CMS — hero copy, bio, services, success stories and social links are all editable
+- [x] Sanity CMS — hero copy and photo, bio, services, success stories and social links are all editable
 - [x] Side-by-side preview of unpublished edits, and publishing without a deploy
 
 ### Requested, not yet built
@@ -76,7 +76,8 @@ assertion as the content lands:
 - [ ] Every CTA points at a real Stripe Payment Link instead of `#`
 - [ ] Real testimonials replace the Canva placeholder copy and stock portraits
 - [ ] Each social icon links to a real profile
-- [ ] Hero photo replaced — the current one is an AI composite with a cropped-off Meta AI watermark
+- [ ] Hero photo replaced — the current one is an AI composite with a cropped-off Meta AI watermark.
+      This one is now a Studio upload rather than a code change (Site settings → Hero photo)
 - [ ] `gym-weights.png` swapped for an Unsplash/Pexels equivalent (Canva stock licensing is scoped to Canva designs)
 
 ## CMS
@@ -124,18 +125,23 @@ to anyone who guesses the path.
 
 ### What is editable
 
-| Document       | Holds                                                                          |
-| -------------- | ------------------------------------------------------------------------------ |
-| `siteSettings` | Hero headline and subline (one entry per line), button label, bio, booking URL |
-| `service`      | The four service cards — title, body, Stripe link, position                    |
-| `testimonial`  | Success stories — quote, client name, photo, position                          |
-| `social`       | Footer icons — network, accessible label, profile URL, position                |
+| Document       | Holds                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------ |
+| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio, booking URL |
+| `service`      | The four service cards — title, body, Stripe link, position                                |
+| `testimonial`  | Success stories — quote, client name, photo, position                                      |
+| `social`       | Footer icons — network, accessible label, profile URL, position                            |
 
-Hero, portrait and footer photos are **not** in the CMS. They are design assets rather than content,
-and keeping them local preserves the `astro:assets` optimization. Testimonial photos do go through
-Sanity, served from its CDN — which is why `Testimonial.astro` uses a plain `<img>` with a `srcset`
-rather than `<Image />`. Running both pipelines would download every image at build time to
-re-encode what Sanity already encoded.
+The portrait and the footer photo are **not** in the CMS. They are design assets rather than
+content, and keeping them local preserves the `astro:assets` optimization.
+
+The hero photo and the testimonial photos **are**, because those are the ones Raul is expected to
+change. They come from Sanity's CDN, which is why `Testimonial.astro` and the hero in
+`index.astro` both use a plain `<img>` with a `srcset` rather than `<Image />` — running both
+pipelines would download every image at build time to re-encode what Sanity already encoded.
+
+`src/assets/hero.png` is still in the repo even though nothing imports it: `scripts/seed-sanity.mjs`
+uploads it when bootstrapping a dataset.
 
 ### First-time setup
 

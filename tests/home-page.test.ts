@@ -14,6 +14,11 @@ const content: PageContent = {
 	settings: {
 		heroTitleLines: ['Get stronger', 'Get healthier'],
 		heroSubLines: ['I offer personal & group training', 'designed to help you get'],
+		heroImage: {
+			_type: 'image',
+			asset: { _ref: 'image-hero-2000x1200-png' },
+			alt: 'Coach Raul Payares training with a client',
+		},
 		heroCtaLabel: 'Sign up now',
 		bioParagraphs: ['Hi,', "I'm Raul Payares, originally from Colombia and now based in Berlin."],
 		bookingUrl: 'https://example.com/pending-cal-com-event',
@@ -126,5 +131,23 @@ describe('response headers', () => {
 	it('allows same-origin framing so the Studio preview pane renders', () => {
 		// DENY here blanks the Presentation pane with only a console error.
 		expect(response.headers.get('X-Frame-Options')).toBe('SAMEORIGIN');
+	});
+});
+
+describe('hero photo', () => {
+	// Moved out of src/assets and into the CMS so Raul can swap it himself.
+	it('is served from Sanity rather than bundled at build time', () => {
+		expect(html).toContain('cdn.sanity.io');
+		expect(html).toContain('w=1600');
+	});
+
+	it('carries the alt text from the CMS', () => {
+		expect(html).toContain('alt="Coach Raul Payares training with a client"');
+	});
+
+	it('no longer emits an astro:assets build of hero.png', () => {
+		// If the local import ever comes back, the optimised filename shows up
+		// here and the two pipelines are both running again.
+		expect(html).not.toMatch(/hero\.[A-Za-z0-9_-]+\.(png|webp|avif)/);
 	});
 });

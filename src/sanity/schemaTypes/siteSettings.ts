@@ -30,6 +30,24 @@ export const siteSettings = defineType({
 			validation: (rule) => rule.required().min(1).max(4),
 		}),
 		defineField({
+			name: 'heroImage',
+			title: 'Hero photo',
+			description:
+				'The full-bleed photo behind the headline. At least 1280px on the long edge. It is cropped to fill the viewport at any aspect ratio, so keep faces near the centre — portrait and landscape both work.',
+			type: 'image',
+			options: { hotspot: true },
+			fields: [
+				defineField({
+					name: 'alt',
+					title: 'Alt text',
+					description: 'Describes the photo for screen readers.',
+					type: 'string',
+					validation: (rule) => rule.required(),
+				}),
+			],
+			validation: (rule) => rule.required(),
+		}),
+		defineField({
 			name: 'heroCtaLabel',
 			title: 'Hero button label',
 			type: 'string',

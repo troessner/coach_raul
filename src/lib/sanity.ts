@@ -74,9 +74,13 @@ const builder = createImageUrlBuilder(publishedClient);
 export const imageUrl = (source: SanityImageSource, width: number) =>
 	builder.image(source).width(width).auto('format').fit('max').url();
 
+/** A Sanity image plus the alt text its schema requires alongside it. */
+export type ImageWithAlt = SanityImageSource & { alt: string };
+
 export interface SiteSettings {
 	heroTitleLines: string[];
 	heroSubLines: string[];
+	heroImage: ImageWithAlt;
 	heroCtaLabel: string;
 	bioParagraphs: string[];
 	bookingUrl: string;
@@ -91,7 +95,7 @@ export interface Service {
 export interface Testimonial {
 	quote: string;
 	name: string;
-	photo: SanityImageSource & { alt: string };
+	photo: ImageWithAlt;
 }
 
 export interface Social {
@@ -128,7 +132,7 @@ export const getPageContent = async (preview: boolean): Promise<PageContent> => 
 
 	const [settings, services, testimonials, socials] = await Promise.all([
 		client.fetch<SiteSettings | null>(
-			`*[_type == "siteSettings"][0]{heroTitleLines, heroSubLines, heroCtaLabel, bioParagraphs, bookingUrl}`,
+			`*[_type == "siteSettings"][0]{heroTitleLines, heroSubLines, heroImage, heroCtaLabel, bioParagraphs, bookingUrl}`,
 		),
 		client.fetch<Service[]>(`*[_type == "service"]|order(order asc){title, body, href}`),
 		client.fetch<Testimonial[]>(`*[_type == "testimonial"]|order(order asc){quote, name, photo}`),

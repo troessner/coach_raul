@@ -80,23 +80,24 @@ const uploadPhoto = async (filename) => {
 	return { _type: 'image', asset: { _type: 'reference', _ref: asset._id } };
 };
 
+const siteSettings = {
+	_id: 'siteSettings',
+	_type: 'siteSettings',
+	heroTitleLines: ['Get stronger', 'Get healthier'],
+	heroSubLines: ['I offer personal & group training', 'designed to help you get', 'Stronger & Healthier'],
+	heroCtaLabel: 'Sign up now',
+	bioParagraphs: [
+		'Hi,',
+		"I'm Raul Payares, originally from Colombia and now based in Berlin.",
+		"With over 15 years of experience in fitness and coaching, I've dedicated my career to helping people become stronger, healthier, and more confident.",
+		'I specialize in strength and high intensity training, functional fitness, and mindset coaching, helping people of all fitness levels achieve lasting results.',
+		"I believe fitness is more than just physical transformation. It's about building discipline, confidence, mental resilience, and a healthier lifestyle.",
+		'My mission is simple: To help you build a stronger body, a stronger mind, and become the best version of yourself.',
+	],
+	bookingUrl: PENDING('cal-com-event'),
+};
+
 const docs = [
-	{
-		_id: 'siteSettings',
-		_type: 'siteSettings',
-		heroTitleLines: ['Get stronger', 'Get healthier'],
-		heroSubLines: ['I offer personal & group training', 'designed to help you get', 'Stronger & Healthier'],
-		heroCtaLabel: 'Sign up now',
-		bioParagraphs: [
-			'Hi,',
-			"I'm Raul Payares, originally from Colombia and now based in Berlin.",
-			"With over 15 years of experience in fitness and coaching, I've dedicated my career to helping people become stronger, healthier, and more confident.",
-			'I specialize in strength and high intensity training, functional fitness, and mindset coaching, helping people of all fitness levels achieve lasting results.',
-			"I believe fitness is more than just physical transformation. It's about building discipline, confidence, mental resilience, and a healthier lifestyle.",
-			'My mission is simple: To help you build a stronger body, a stronger mind, and become the best version of yourself.',
-		],
-		bookingUrl: PENDING('cal-com-event'),
-	},
 	...services.map((service, i) => ({
 		_id: `service-${i + 1}`,
 		_type: 'service',
@@ -114,6 +115,11 @@ const docs = [
 ];
 
 const run = async () => {
+	process.stdout.write('uploading hero.png... ');
+	const heroImage = await uploadPhoto('hero.png');
+	docs.push({ ...siteSettings, heroImage: { ...heroImage, alt: 'Coach Raul Payares training with a client' } });
+	console.log('done');
+
 	for (const [i, filename] of testimonialPhotos.entries()) {
 		process.stdout.write(`uploading ${filename}... `);
 		const photo = await uploadPhoto(filename);
