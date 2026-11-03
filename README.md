@@ -41,7 +41,7 @@ not a move to another platform.
 - [x] Four service cards (Personal Training, Nutrition, Mindset, 90-Day Challenge)
 - [x] Success stories grid (4 testimonials)
 - [x] Footer with logo, "Stay connected", social icons and legal links
-- [x] Group classes section linking out to Cal.com booking — link still a `#` placeholder
+- [x] Group classes section linking out to Cal.com booking — link still the seeded `example.com` placeholder
 - [x] Impressum and Datenschutzerklärung (German, as the law requires) — details still placeholders
 - [x] Contact links in the footer — email, phone, WhatsApp — details still placeholders
 - [x] Self-hosted Archivo — no request leaves the visitor's browser for a Google domain
@@ -64,8 +64,9 @@ not a move to another platform.
 
 ### Launch checklist
 
-These are encoded as `it.todo(...)` entries in `tests/build-output.test.ts`. Turn each into a real
-assertion as the content lands:
+These are encoded as `it.todo(...)` entries in `tests/build-output.test.ts` and
+`tests/home-page.test.ts`. Turn each into a real assertion as the content lands — except the
+placeholder-link gate, which cannot be a test (see below):
 
 - [ ] `X-Robots-Tag: noindex` removed from **both** `public/_headers` _and_
       `src/pages/index.astro` — the home page renders per request and never sees
@@ -74,7 +75,9 @@ assertion as the content lands:
       `site` in `astro.config.mjs`, the Sanity **CORS origin**, the Sanity
       **Studio host URL**, and the canonical/`og:url` they feed
 - [ ] `src/legal.ts` carries Raul's real address, phone and email — the Impressum is unusable without them
-- [ ] `bookingHref` in `src/pages/index.astro` points at the real Cal.com event instead of `#`
+- [ ] `siteSettings.bookingUrl` holds the real Cal.com event link instead of the `example.com`
+      placeholder. This is **CMS content, not code** — Raul pastes it in the Studio and it is live
+      within ~60s. See the Cal.com runbook below
 - [ ] The Art. 28 AVV with Cal.com is signed, and the Kursbuchung section of `datenschutz.astro`
       matches reality (see the TODOs in its frontmatter)
 - [ ] Every CTA points at a real Stripe Payment Link instead of `#`
@@ -201,8 +204,21 @@ the build never queries Sanity, because the only CMS-driven page renders per req
 
 The seed writes reserved `example.com` URLs rather than `#` for every link that does not exist yet
 (Stripe, Cal.com, social profiles). A `#` renders as a button that looks live and does nothing;
-`example.com` is visibly unfinished, and a launch gate in `tests/home-page.test.ts` asserts none of
-them survive.
+`example.com` is visibly unfinished.
+
+**No test can gate these.** The home page renders from a mocked fixture, so the live Sanity value
+never enters the test process — an assertion would only flip green when someone edits the fixture,
+which gates nothing. That is why `it.todo('replaces every example.com placeholder link…')` is still
+a todo and should stay one.
+
+The gate that works is a GROQ query. Paste it into the Studio's **Vision** tool before launch; it
+covers the booking link, the four Stripe links and the four social URLs at once:
+
+```groq
+*[defined(bookingUrl) && bookingUrl match "*example.com*"] + *[defined(href) && href match "*example.com*"]
+```
+
+An empty result means the gate passed.
 
 ### A missing variable fails the request, deliberately
 
@@ -223,7 +239,7 @@ The remaining work has a deliberate sequence. Each step assumes the one before i
    instead of a bare Payment Link. Cal.com is **linked, not embedded** — see below.
 4. **Intro video section**, between hero and bio.
 
-Cal.com is reached by a link rather than an `<iframe>`, and `tests/build-output.test.ts` asserts no
+Cal.com is reached by a link rather than an `<iframe>`, and `tests/home-page.test.ts` asserts no
 iframe reaches the built page. An embedded frame fetches on page load, so every visitor's IP goes to
 Cal.com whether or not they ever intended to book — the same exposure that made remote Google Fonts
 a standing Abmahnung risk, and it would falsify the "Keine Cookies, kein Tracking" section of the
@@ -248,9 +264,56 @@ None of these are blocked on engineering:
 - A Stripe account, plus the price of each service
 - The intro video
 - A replacement hero photo (see the launch checklist)
-- A Cal.com account with the class event type configured (**Offer Seats** set to the class size,
-  which is on the free plan), the public event URL, and the signed Art. 28 AVV. Confirm whether
-  recurring events are available on the plan he ends up on — sources disagreed on that one
+- A Cal.com account with the class event type configured, the public event URL, and the signed
+  Art. 28 AVV — see the runbook below
+
+## Class booking (Cal.com)
+
+Registration is a link out to a Cal.com event. Cal.com owns the schedule, the seat count, the
+confirmations and the cancellations; this site owns one `<a>`. The URL is CMS content
+(`siteSettings.bookingUrl`), so changing it needs no deploy.
+
+### Do not turn on "Recurring"
+
+Cal.com's docs state it verbatim: **"Recurring events are not available with seats, payments, or
+the per-booker booking limit."** Seats are the entire mechanism of a group class, so Recurring
+would silently reduce every slot to one attendee.
+
+Weekly classes do **not** need that feature. Weekly repetition comes from the _availability
+schedule_ — every Tuesday 18:30 becomes its own bookable slot with its own seats. Recurring is for
+letting one person book a whole series in one action (term enrolment), which is a different
+product and would also rule out prepayment.
+
+### Setup
+
+1. Sign in at cal.com; note the username in the URL.
+2. **Availability** → new schedule, "Class times". Clear every day, then add only the real class
+   windows (e.g. Tue 18:30–19:30, Thu 18:30–19:30). Timezone **Europe/Berlin**.
+3. **Event Types → + New.** Title "Group class" — visitors see this. Duration = real class length.
+4. In the event → **Availability** tab → select "Class times".
+5. In the event → **Payments & Seats** → **Offer seats** on, seats = room capacity. Keep attendee
+   info **private**.
+6. **Location** → "In Person (organizer address)" with the gym address. **Not** "In Person
+   (attendee address)" — Cal.com blocks seats with that one.
+7. Leave "Requires confirmation" **off** unless Raul wants to approve each booking by hand.
+8. Set a minimum notice (e.g. 2 h) so nobody books a class starting in five minutes.
+9. Copy the **public** link: `https://cal.com/<username>/<event-slug>`.
+10. **Open it in a private window.** A login screen means the `app.cal.com/event-types/…` dashboard
+    URL was copied by mistake. Both forms pass the schema's URL validation, so nothing downstream
+    will catch this.
+11. Studio → **Site settings** → booking link → paste → **Publish**. Live within ~60s.
+
+**Verify at step 5:** "Offer seats" is not named on Cal.com's Free plan card and their docs do not
+say which plan it requires. Confirm it is available before relying on it — without seats a group
+class cannot work and this approach needs revisiting.
+
+### If classes become prepaid
+
+Cal.com's Stripe app charges on their hosted booking page, after slot selection. **Nothing in this
+repo changes** — same URL, same link, same markup. What it does add is legal: prepayment makes it a
+distance contract, so price-with-VAT, cancellation terms and a `Widerrufsbelehrung` have to exist
+where the booker sees them, and Stripe must be named alongside Cal.com in the Kursbuchung section
+of `datenschutz.astro`.
 
 ## Deployment
 

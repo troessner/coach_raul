@@ -64,7 +64,7 @@ export const siteSettings = defineType({
 			name: 'bookingUrl',
 			title: 'Cal.com booking link for group classes',
 			description:
-				'The public Cal.com event URL. Opens in a new tab — it is deliberately not embedded, because an embedded frame would send every visitor to Cal.com before they clicked anything.',
+				'The public Cal.com event URL, e.g. https://cal.com/raul/group-class. Use that public link, NOT the app.cal.com/event-types/... address from the dashboard — that one is behind a login and visitors would hit a sign-in wall. Opens in a new tab: it is deliberately not embedded, because an embedded frame would send every visitor to Cal.com before they clicked anything.',
 			type: 'url',
 			validation: (rule) => rule.required().uri({ scheme: ['https'] }),
 		}),
