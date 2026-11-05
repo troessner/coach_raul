@@ -1,4 +1,5 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import reactRenderer from '@astrojs/react/server.js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { PageContent } from '../src/lib/sanity';
 
@@ -51,16 +52,27 @@ vi.mock('../src/lib/sanity', async (importOriginal) => {
 });
 
 let html = '';
+let previewHtml = '';
 let response: Response;
 
 beforeAll(async () => {
 	// Layout.astro derives the canonical URL from Astro.site, which the
 	// container does not inherit from astro.config.mjs.
 	const container = await AstroContainer.create({ astroConfig: { site: 'https://coach-raul.test' } });
+	// The preview overlay is a `client:only="react"` island. The container
+	// resolves that directive against its registered renderers, so without these
+	// two the preview render throws NoMatchingRenderer instead of asserting.
+	container.addServerRenderer({ name: '@astrojs/react', renderer: reactRenderer });
+	container.addClientRenderer({ name: '@astrojs/react', entrypoint: '@astrojs/react/client.js' });
 	const { default: Index } = await import('../src/pages/index.astro');
 
 	html = await container.renderToString(Index, { request: new Request('https://coach-raul.test/') });
 	response = await container.renderToResponse(Index, { request: new Request('https://coach-raul.test/') });
+	// index.astro reads this cookie directly, so setting it is all preview mode
+	// needs here — /api/draft/enable's secret check is a separate route's job.
+	previewHtml = await container.renderToString(Index, {
+		request: new Request('https://coach-raul.test/', { headers: { cookie: 'sanity-draft-mode=true' } }),
+	});
 });
 
 describe('rendered home page', () => {
@@ -113,6 +125,16 @@ describe('rendered home page', () => {
 		// The overlay carries stega-encoded document ids. On a public page view
 		// that would leak the content model to every visitor.
 		expect(html).not.toMatch(/visual-editing/i);
+	});
+
+	it('mounts the visual editing overlay in preview', () => {
+		// The counterpart to the test above, and the one that was missing: the
+		// component renders null unless it is handed `enabled`, so gating it from
+		// the outside with `{preview && <VisualEditing />}` emitted no island at
+		// all. Draft mode, stega and the cookie all worked; the Studio's
+		// Presentation pane just had nothing to talk to and said only
+		// "Unable to connect" in a console it is easy not to open.
+		expect(previewHtml).toContain('astro-island');
 	});
 
 	// Launch gates — unskip each one as the real content lands. See README.
