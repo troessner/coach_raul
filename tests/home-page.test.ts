@@ -121,6 +121,21 @@ describe('rendered home page', () => {
 		expect(html).not.toMatch(/<iframe/);
 	});
 
+	it('points the class CTA at the booking URL from the CMS, in a new tab', () => {
+		// Scoped to the section: a match anywhere in the document would also pass
+		// on a footer link, which is not what this is about.
+		const section = html.slice(html.indexOf('id="classes"'));
+		const cta = section.match(/<a\b[^>]*>/)?.[0] ?? '';
+
+		// Data flow, not configuration. A hardcoded cal.com link would render
+		// perfectly and silently ignore every edit Raul makes in the Studio.
+		expect(cta).toContain(`href="${content.settings.bookingUrl}"`);
+		// Leaving the page mid-funnel loses the visitor.
+		expect(cta).toContain('target="_blank"');
+		// Reverse tabnabbing: without it the opened tab can navigate this one.
+		expect(cta).toContain('rel="noopener');
+	});
+
 	it('ships no visual editing overlay outside preview', () => {
 		// The overlay carries stega-encoded document ids. On a public page view
 		// that would leak the content model to every visitor.
