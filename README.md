@@ -87,6 +87,26 @@ placeholder-link gate, which cannot be a test (see below):
       This one is now a Studio upload rather than a code change (Site settings → Hero photo)
 - [ ] `gym-weights.png` swapped for an Unsplash/Pexels equivalent (Canva stock licensing is scoped to Canva designs)
 
+### Operational follow-ups
+
+Not launch blockers, but open and easy to forget. Each one is done in a dashboard, not in this repo.
+
+- [ ] **Delete the stray `SANITY_READ_TOKEN` from Cloudflare → Settings → _Build_ → Variables.**
+      It belongs in **Runtime** only, where it already is. The build copy was added while
+      diagnosing a 500 and nothing reads it — it is a credential sitting somewhere it has no
+      reason to be
+- [ ] **Revoke the `seed` (Editor) token** in sanity.io/manage, and drop `SANITY_WRITE_TOKEN` from
+      the local `.env`. It existed to run `scripts/seed-sanity.mjs` and the hero upload. Both are
+      done; re-issue one if the dataset ever needs re-seeding
+- [ ] **Invite Raul as an Editor** on the Sanity project, so he edits content under his own login
+- [ ] **Check what Sanity's free tier covers** before the trial lapses — it was showing "26 days
+      left" on 2026-11-03, so roughly **2026-11-29**
+- [ ] **Add `http://localhost:4321` as a Sanity CORS origin** if the Studio is ever to be used
+      locally. Only the deployed origin is registered today
+- [ ] **Declare `@sanity/preview-url-secret` in `package.json`.** `src/pages/api/draft/enable.ts`
+      imports it, but it only resolves as a transitive dependency of `sanity`. It works today and
+      breaks silently the day a `sanity` bump stops pulling it in
+
 ## CMS
 
 Content lives in Sanity. **Publishing is live immediately — there is no deploy and no rebuild.**
@@ -129,6 +149,37 @@ The preview flow:
 
 Validating the secret is what stops the route being an open switch for serving unpublished content
 to anyone who guesses the path.
+
+#### If Presentation says "Unable to connect"
+
+The console message is _"Unable to connect to visual editing. Make sure you've setup
+'@sanity/visual-editing' correctly"_, the document list is empty and the Edit toggle does nothing.
+
+**Check the overlay is actually being emitted before suspecting draft mode.** Draft mode failing
+and the overlay missing look identical from the Studio, and they are fixed in completely different
+places. Distinguish them from a terminal:
+
+```sh
+curl -sD - -H 'Cookie: sanity-draft-mode=true' http://localhost:4321/ -o /tmp/p.html | grep -i cache-control
+grep -c astro-island /tmp/p.html
+```
+
+- `cache-control: private, no-store` → draft mode is **working** (`index.astro` sets that only in
+  preview). Zero-width characters in the body confirm stega is encoding too.
+- `astro-island` count of 0 → the overlay is **not** being emitted. That is the bug.
+
+`@sanity/astro`'s `VisualEditing` component renders `null` unless it is passed `enabled`:
+
+```astro
+{enabled ? <VisualEditingComponent client:only="react" ... /> : null}
+```
+
+Gating it from the outside — `{preview && <VisualEditing />}` — type-checks, because `enabled` is
+optional, and emits no island at all. It must be `<VisualEditing enabled={preview} />`.
+`tests/home-page.test.ts` asserts both directions: island present in preview, absent without it.
+
+**Open the Studio on this site's own hostname**, not through sanity.io. The draft cookie is
+`SameSite=lax`, so a cross-site iframe drops it and preview silently never turns on.
 
 ### What is editable
 
@@ -284,28 +335,100 @@ schedule_ — every Tuesday 18:30 becomes its own bookable slot with its own sea
 letting one person book a whole series in one action (term enrolment), which is a different
 product and would also rule out prepayment.
 
+On the **free plan this is self-enforcing**: Cal.com's pricing page lists "Recurring events" as a
+Teams feature, so the trap cannot be sprung by accident. The warning stands anyway — it becomes
+live the moment anyone upgrades, and a `Recurring` entry is visible in the event sidebar either
+way.
+
+### Status — where this stands (2026-11-05)
+
+A scouting run on a **throwaway Cal.com account** (free plan, personal Google login) walked this
+far and stopped. The account is disposable and none of it carries over: the real event must be
+created under **Raul's own account**, because the Art. 28 AVV is accepted inside the account that
+processes the bookings, and because Cal.com's free plan is **1 user** — there is no way to add a
+second person to someone else's account, so this cannot be set up on his behalf and handed over.
+
+**Verified against the live product, not the docs:**
+
+| Question                           | Answer                                              |
+| ---------------------------------- | --------------------------------------------------- |
+| Is "Offer seats" on the free plan? | **Yes.** No `Teams` badge, no upgrade prompt        |
+| Is paid booking on the free plan?  | **Yes**, same — relevant only if classes go prepaid |
+| Does the seat setting persist?     | **Yes.** Set to 10, saved, hard-reloaded, still 10  |
+| Does the booking page show seats?  | **Yes** — each slot renders "10 Seats available"    |
+
+That first row was the load-bearing unknown in the plan; Cal.com's pricing page never names seats
+at any tier, and the answer only exists in the product.
+
+**Still to do, in order:**
+
+1. Raul creates his own account with a **deliberate ASCII username** (see below)
+2. Availability — the real class windows
+3. Location — currently defaults to Cal Video
+4. A test booking in a private window, watching the seat count drop
+5. The Art. 28 AVV, and the three checks in `src/pages/datenschutz.astro`
+6. Paste the public URL into Studio → Site settings → booking link
+
+### The UI, as of 2026-11-05
+
+Cal.com's own docs and every tutorial still say "Event Types → Advanced". **That navigation no
+longer exists.** What is actually there:
+
+- Left sidebar: Home, **Links**, Events, Bookings, Availability, Teams, Apps, Routing, Workflows,
+  Insights. **"Links" is what the docs call "Event Types."**
+- Inside an event, a second sidebar: **Setup** (Basics, Availability) · **Booking experience**
+  (Booking form, Confirmation, Appearance, **Payments & Seats**, Recurring) · **Policies**
+  (Limits & buffers, Reschedule & cancel, Privacy & security).
+
+Seats live under **Payments & Seats**, not "Advanced". If a future redesign moves them again, the
+fastest way to find anything in this product is to open the event and Cmd+F the page.
+
+Paid-only features are labelled in place with a `Teams` badge and an Upgrade button — that is how
+the free-plan questions above were answered, and how to answer the next one without reading a
+pricing page.
+
 ### Setup
 
-1. Sign in at cal.com; note the username in the URL.
-2. **Availability** → new schedule, "Class times". Clear every day, then add only the real class
-   windows (e.g. Tue 18:30–19:30, Thu 18:30–19:30). Timezone **Europe/Berlin**.
-3. **Event Types → + New.** Title "Group class" — visitors see this. Duration = real class length.
-4. In the event → **Availability** tab → select "Class times".
-5. In the event → **Payments & Seats** → **Offer seats** on, seats = room capacity. Keep attendee
-   info **private**.
-6. **Location** → "In Person (organizer address)" with the gym address. **Not** "In Person
-   (attendee address)" — Cal.com blocks seats with that one.
-7. Leave "Requires confirmation" **off** unless Raul wants to approve each booking by hand.
-8. Set a minimum notice (e.g. 2 h) so nobody books a class starting in five minutes.
-9. Copy the **public** link: `https://cal.com/<username>/<event-slug>`.
-10. **Open it in a private window.** A login screen means the `app.cal.com/event-types/…` dashboard
-    URL was copied by mistake. Both forms pass the schema's URL validation, so nothing downstream
-    will catch this.
-11. Studio → **Site settings** → booking link → paste → **Publish**. Live within ~60s.
+1. **Sign up at cal.com — as Raul, with a username chosen on purpose.** Signing up with Google
+   generates one from the profile name plus a random suffix, and it does not sanitise it: this
+   scouting account came out as `timo-roßner-prrjqm`. A `ß` in a URL percent-encodes to `%C3%9F`,
+   which looks broken everywhere it is pasted. The username is the public booking URL. It can be
+   changed later in Settings → Profile, but that **breaks every link already published**,
+   including the one stored in Sanity.
+2. **Links → + New.** Title "Group class" — visitors see this. Duration = real class length.
+3. Event → **Setup → Availability** → **Custom**, and set the real class windows there (e.g.
+   Tue 18:30–19:30, Thu 18:30–19:30). Timezone **Europe/Berlin**. The default is Cal.com's 9–5
+   weekday schedule, which is not a class timetable.
 
-**Verify at step 5:** "Offer seats" is not named on Cal.com's Free plan card and their docs do not
-say which plan it requires. Confirm it is available before relying on it — without seats a group
-class cannot work and this approach needs revisiting.
+   Custom rather than a named shared schedule because there is exactly one class event. Promote it
+   to a shared schedule the day a second class type needs the same hours — not before.
+
+   **This step is the weekly recurrence.** Every Tuesday 18:30 becomes its own bookable slot with
+   its own seats. See the warning above for why this is not the "Recurring" feature.
+
+4. Event → **Setup → Basics** → location → **In Person (organizer address)** with the gym address.
+   The default is Cal Video. **Not** "In Person (attendee address)" — Cal.com blocks seats with
+   that one.
+5. Event → **Booking experience → Payments & Seats** → **Offer seats** on, seat count = room
+   capacity. Then:
+   - **"Share attendee information between guests" — leave unchecked.** On, it shows every
+     attendee the names and email addresses of everyone else in the class. That is a disclosure of
+     personal data to third parties with no legal basis behind it, and it would make the
+     Kursbuchung section of `datenschutz.astro` untrue.
+   - **"Show the number of available seats"** — on is fine and creates urgency as a class fills.
+     The cost is that an empty class advertises its emptiness.
+6. **Seats and manual approval are mutually exclusive.** The toggle's own help text: _"This
+   automatically disables guest & opt-in bookings."_ Opt-in is "Requires confirmation", so on a
+   seated event Raul cannot vet attendees before they take a seat. If vetting ever matters more
+   than capacity, this whole approach needs revisiting.
+7. Event → **Policies → Limits & buffers** → a minimum notice (e.g. 2 h), so nobody books a class
+   starting in five minutes.
+8. Copy the **public** link: `https://cal.com/<username>/<event-slug>`.
+9. **Open it in a private window and book a test seat.** A login screen means the
+   `app.cal.com/event-types/…` dashboard URL was copied by mistake — both forms pass the schema's
+   URL validation, so nothing downstream will catch it. Watch the seat count drop by one; that is
+   the only check that exercises the whole chain.
+10. Studio → **Site settings** → booking link → paste → **Publish**. Live within ~60s, no deploy.
 
 ### If classes become prepaid
 
