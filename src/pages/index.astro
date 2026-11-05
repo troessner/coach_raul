@@ -181,7 +181,7 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 			</nav>
 		</div>
 	</footer>
-	{preview && <VisualEditing />}
+	<VisualEditing enabled={preview} />
 </Layout>
 
 <style>
