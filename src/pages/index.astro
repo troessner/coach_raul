@@ -27,6 +27,12 @@ Astro.response.headers.set('X-Frame-Options', 'SAMEORIGIN');
 const preview = Astro.cookies.get(DRAFT_COOKIE)?.value === 'true';
 const { settings, services, testimonials, socials } = await getPageContent(preview);
 
+// This page's body depends on the draft cookie, so the cache has to key on it.
+// Without this, Cloudflare stores one body per URL and a previewing browser
+// gets whichever it lands on — edge-cached published HTML or freshly rendered
+// draft HTML — flipping between the two at random.
+Astro.response.headers.set('Vary', 'Cookie');
+
 if (preview) {
 	// Unpublished content must never be cached anywhere, by anyone.
 	Astro.response.headers.set('Cache-Control', 'private, no-store');

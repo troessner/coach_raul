@@ -169,6 +169,14 @@ describe('response headers', () => {
 		// DENY here blanks the Presentation pane with only a console error.
 		expect(response.headers.get('X-Frame-Options')).toBe('SAMEORIGIN');
 	});
+
+	it('keys the edge cache on the draft cookie', () => {
+		// The published body is cached at Cloudflare for 60s. Without Vary that
+		// one body is served to previewing editors too, so the hero flips between
+		// draft and published depending on whether the request reached the Worker.
+		expect(response.headers.get('Cache-Control')).toContain('s-maxage=60');
+		expect(response.headers.get('Vary')).toBe('Cookie');
+	});
 });
 
 describe('hero photo', () => {
