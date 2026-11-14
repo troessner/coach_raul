@@ -187,10 +187,49 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 			</nav>
 		</div>
 	</footer>
+	{preview && (
+		<div class="preview-bar">
+			<span>
+				<strong>Preview</strong> — unpublished drafts. This is not what visitors see.
+			</span>
+			<a href="/api/draft/disable">Exit preview</a>
+		</div>
+	)}
 	<VisualEditing enabled={preview} />
 </Layout>
 
 <style>
+	/* ---------- preview bar ---------- */
+	/* The draft cookie is httpOnly and lives on the site's own origin for an
+	   hour, so a preview session is otherwise invisible outside the Studio and
+	   drafts get mistaken for the live site. Fixed rather than static: it must
+	   not shift the layout it is there to let you judge. */
+	.preview-bar {
+		position: fixed;
+		inset: 0 0 auto;
+		z-index: 100;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 0.25rem 1rem;
+		padding: 0.5rem var(--gutter);
+		background: var(--accent);
+		color: #000;
+		font-size: 0.875rem;
+	}
+
+	.preview-bar a {
+		font-weight: 700;
+		text-decoration: underline;
+	}
+
+	/* The global focus ring is --accent, which is this bar's background. */
+	.preview-bar a:focus-visible {
+		outline: 2px solid #000;
+		outline-offset: 2px;
+	}
+
 	/* ---------- hero ---------- */
 	.hero {
 		position: relative;

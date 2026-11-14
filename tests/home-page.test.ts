@@ -179,6 +179,19 @@ describe('response headers', () => {
 	});
 });
 
+describe('preview bar', () => {
+	it('warns that a preview session is not the live site, with a way out', () => {
+		// The draft cookie is httpOnly and covers the whole origin for an hour,
+		// so without this a draft reads as published and gets acted on as such.
+		expect(previewHtml).toContain('preview-bar');
+		expect(previewHtml).toContain('/api/draft/disable');
+	});
+
+	it('shows no preview bar to ordinary visitors', () => {
+		expect(html).not.toContain('preview-bar');
+	});
+});
+
 describe('hero photo', () => {
 	// Moved out of src/assets and into the CMS so Raul can swap it himself.
 	it('is served from Sanity rather than bundled at build time', () => {
