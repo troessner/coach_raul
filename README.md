@@ -126,10 +126,20 @@ That is the whole reason the home page renders per request instead of being bake
 | `/studio`                       | prerendered shell | The Studio itself is a client-side React SPA               |
 | `/api/draft/enable`, `/disable` | per request       | Set and clear the preview cookie                           |
 
-Only `/` costs a Worker invocation on a normal visit, and its HTML is cached at Cloudflare's edge
-for 60 seconds (`s-maxage=60, stale-while-revalidate=600`). A publish is therefore visible within
-about a minute. Set that to `0` in `src/pages/index.astro` if it ever needs to be instant — the
-cost is one Sanity query per page view instead of one per minute.
+The per-request pages cache their HTML at Cloudflare's edge — 60 seconds for `/`
+(`s-maxage=60, stale-while-revalidate=600`), five minutes for the legal pages. A publish is
+therefore visible within about a minute. The policies live in `src/lib/headers.ts`; set `maxAge`
+to `0` if it ever needs to be instant, at the cost of one Sanity query per page view instead of
+one per minute.
+
+**`useCdn` is off on the published client**, which is not the usual default. Sanity's CDN caches a
+query response for 60s, and inside a Worker that read is itself a subrequest Cloudflare caches —
+two layers in front of a page that already has an edge cache of its own. A content change was
+observed still missing from the published page a quarter of an hour after it landed, while the
+draft client (no CDN) rendered it correctly from the same Worker on the same deploy. Publishing
+and seeing it live is the reason this site renders per request at all, so the layer had to go. The
+page's own edge cache is what keeps this from meaning a query per visitor: it is one query per
+cache miss.
 
 ### Preview
 

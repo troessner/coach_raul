@@ -57,11 +57,26 @@ const dataset = import.meta.env.PUBLIC_SANITY_DATASET ?? 'production';
 // A date, not a semver — it pins the query language and response shape.
 const apiVersion = '2026-10-30';
 
+/**
+ * useCdn is off deliberately.
+ *
+ * Sanity's CDN caches a query response for 60s, and inside a Cloudflare Worker
+ * that read is itself a subrequest Cloudflare caches — two layers in front of
+ * a page that already sets `s-maxage=60` of its own. A content change was
+ * observed still missing from the published page a quarter of an hour after it
+ * landed, while the draft client (which does not use the CDN) rendered it
+ * correctly from the same Worker on the same deploy. "Publish and see it live"
+ * is the reason this site renders per request at all, so a cache that can
+ * outlive its own TTL by that margin costs more than it saves.
+ *
+ * The page's own edge cache is what keeps this from meaning a Sanity query per
+ * visitor: it is one query per cache miss, not per page view.
+ */
 const publishedClient = createClient({
 	projectId,
 	dataset,
 	apiVersion,
-	useCdn: true,
+	useCdn: false,
 	perspective: 'published',
 });
 
