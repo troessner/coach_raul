@@ -18,6 +18,9 @@ GitHub (`origin` remote) is the only host for this repository.
 git rev-parse --abbrev-ref HEAD
 git rev-parse --git-dir
 git rev-parse --git-common-dir
+git status --porcelain
+git fetch origin main
+git log --oneline origin/main..HEAD
 ```
 
 If `--git-dir` and `--git-common-dir` resolve to **different** paths, you are in a
@@ -25,16 +28,51 @@ If `--git-dir` and `--git-common-dir` resolve to **different** paths, you are in
 `.claude/worktrees/<id>` on a branch like `worktree-<id>`). If they are the same,
 you are in the **main checkout**.
 
-- **Main checkout:** the current branch must be `main`. If it is not, stop
-  immediately and tell the user:
-
-  > "You're on branch `<branch>`, not `main`. Please switch to `main` before running /publish."
-
 - **Linked worktree:** you do **not** need to be on `main`, and you must **not**
   switch to it — that would abandon the worktree's purpose. The worktree's own
   branch already holds the work (committed and/or uncommitted). Treat that branch
   as what you're publishing: in step 4 you'll rename it in place instead of cutting
   a new branch, and the PR base is still `main`.
+
+- **Main checkout, on `main`:** the ordinary case. Continue through every step.
+
+- **Main checkout, on some other branch:** what matters is not the branch name but
+  whether the work is already committed on a branch based on `origin/main`. The
+  guard exists to stop a branch being cut from a stale or unrelated base, not to
+  reject a branch that is already correct.
+
+  - **`git status --porcelain` is clean and `git log origin/main..HEAD` lists only
+    this work** — the branch is already what /publish would have created. Say so
+    in one line, skip steps 3–5, and go to step 6 and push it. Confirm the base
+    first with `git diff --stat origin/main`: if that shows changes you did not
+    make, the branch is not based on current `main` — stop and tell the user.
+  - **There are uncommitted changes** (typically: the last PR is merged, the
+    session stayed on that branch, and new work landed in the working tree) —
+    cut the new branch from `origin/main` rather than from here, which carries
+    the uncommitted changes across:
+
+    ```bash
+    git fetch origin main
+    git diff HEAD origin/main --stat   # must be empty, or list only files you did not touch
+    git checkout -b <branch-name> --no-track origin/main
+    git status --porcelain             # the same changes, now on a current base
+    ```
+
+    `--no-track` matters: without it the new branch's upstream is `origin/main`,
+    which is what makes the short push form in step 6 push onto `main`.
+
+    If `git diff HEAD origin/main` lists a file you have edited, the checkout
+    would have to merge it — stop and tell the user rather than guessing.
+
+  - **The branch carries unrelated commits** — stop and tell the user:
+
+    > "You're on branch `<branch>`, not `main`, and it has commits that are not
+    > part of this work. Switch to `main` before running /publish, or tell me
+    > which commits should go in the PR."
+
+  Cutting a new branch from the _current_ branch is always wrong here: it inherits
+  whatever that branch already carries, and the PR then contains unrelated commits
+  alongside the work.
 
 **2. Run CI and fix all errors**
 
@@ -74,6 +112,9 @@ Slug: lowercase, hyphens, ≤ 40 chars, derived from the actual changes.
   ```bash
   git checkout -b <branch-name>
   ```
+
+  If step 1 already cut it from `origin/main` to carry work off a stale branch,
+  it exists — skip this step rather than cutting a second one.
 
 - **Linked worktree:** rename the existing worktree branch in place — this keeps
   all commits and uncommitted changes and needs no checkout:
@@ -184,14 +225,16 @@ fix commit unless the user asks for one.
 
 **Error table**
 
-| Situation                                              | Action                                                                                            |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Not on `main` in the main checkout                     | Stop, instruct user                                                                               |
-| In a linked worktree (e.g. `claude -w`)                | Don't switch to `main`; rename the worktree branch in place (step 4) and publish from it          |
-| Nothing to commit but branch ahead of `main`           | Work already committed — skip commit, push as-is                                                  |
-| CI still failing after 3 fix rounds                    | Stop, show errors, ask user                                                                       |
-| `npm test` fails with "No build output"                | The tests assert against `dist/` — run `npm run build` first, or just `npm run ci`                |
-| `gh` not authenticated                                 | Tell user: `gh auth login`                                                                        |
-| `gh pr create` says a PR already exists                | Don't create a second one — point the user at /amend                                              |
-| `gh pr create` says "No commits between main and main" | The push landed on `main`, not the branch. Stop, tell the user, don't force-push without approval |
-| `gh pr create` error                                   | Show error, do not retry silently                                                                 |
+| Situation                                                           | Action                                                                                            |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Not on `main`, work already committed on a branch off `origin/main` | Not an error — skip steps 3–5 and push that branch (step 1)                                       |
+| Not on `main`, with uncommitted changes                             | Cut the branch from `origin/main` with `--no-track`, carrying the changes (step 1)                |
+| Not on `main`, branch carries unrelated commits                     | Stop, instruct user                                                                               |
+| In a linked worktree (e.g. `claude -w`)                             | Don't switch to `main`; rename the worktree branch in place (step 4) and publish from it          |
+| Nothing to commit but branch ahead of `main`                        | Work already committed — skip commit, push as-is                                                  |
+| CI still failing after 3 fix rounds                                 | Stop, show errors, ask user                                                                       |
+| `npm test` fails with "No build output"                             | The tests assert against `dist/` — run `npm run build` first, or just `npm run ci`                |
+| `gh` not authenticated                                              | Tell user: `gh auth login`                                                                        |
+| `gh pr create` says a PR already exists                             | Don't create a second one — point the user at /amend                                              |
+| `gh pr create` says "No commits between main and main"              | The push landed on `main`, not the branch. Stop, tell the user, don't force-push without approval |
+| `gh pr create` error                                                | Show error, do not retry silently                                                                 |
