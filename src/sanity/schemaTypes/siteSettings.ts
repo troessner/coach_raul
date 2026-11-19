@@ -79,6 +79,39 @@ export const siteSettings = defineType({
 			validation: (rule) => rule.required().min(1),
 		}),
 		defineField({
+			name: 'aboutHeadingLines',
+			title: 'Bio section heading (one entry per line)',
+			description: 'Sits beside the portrait. The design breaks it across two lines.',
+			type: 'array',
+			of: [{ type: 'string' }],
+			validation: (rule) => rule.required().min(1).max(3),
+		}),
+		defineField({
+			name: 'servicesHeading',
+			title: 'Services section heading',
+			type: 'string',
+			validation: (rule) => rule.required().max(40),
+		}),
+		defineField({
+			name: 'classesHeading',
+			title: 'Group classes section heading',
+			type: 'string',
+			validation: (rule) => rule.required().max(40),
+		}),
+		defineField({
+			name: 'storiesHeading',
+			title: 'Success stories section heading',
+			type: 'string',
+			validation: (rule) => rule.required().max(40),
+		}),
+		defineField({
+			name: 'connectHeading',
+			title: 'Footer heading',
+			description: 'Above the contact links in the footer.',
+			type: 'string',
+			validation: (rule) => rule.required().max(40),
+		}),
+		defineField({
 			name: 'bookingUrl',
 			title: 'Cal.com booking link for group classes',
 			description:

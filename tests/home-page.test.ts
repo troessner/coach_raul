@@ -27,7 +27,21 @@ const content: PageContent = {
 			alt: 'Raul Payares with a slam ball on the Spree',
 		},
 		bioParagraphs: ['Hi,', "I'm Raul Payares, originally from Colombia and now based in Berlin."],
+		aboutHeadingLines: ['Meet', 'Coach Raul Payares'],
+		servicesHeading: 'Service',
+		classesHeading: 'Group classes',
+		storiesHeading: 'Success stories',
+		connectHeading: 'Stay connected',
 		bookingUrl: 'https://example.com/pending-cal-com-event',
+	},
+	operator: {
+		name: 'Raul Payares',
+		street: 'Beispielstraße 1',
+		city: '10115 Berlin',
+		country: 'Deutschland',
+		phone: '+49 30 1234567',
+		email: 'raul@example.com',
+		vatId: null,
 	},
 	services: [
 		{ title: 'Personal Training', body: 'One-on-one sessions.', href: 'https://example.com/pending-stripe' },
@@ -107,6 +121,20 @@ describe('rendered home page', () => {
 		expect(html).toContain('href="mailto:');
 		expect(html).toContain('href="tel:');
 		expect(html).toContain('href="https://wa.me/');
+	});
+
+	it('takes every section heading from the CMS', () => {
+		// Hardcoding one of these would render identically today and then ignore
+		// every edit Raul makes, which is the failure the whole change exists to
+		// prevent — so the assertion is that each heading is inside its section,
+		// not merely somewhere on the page.
+		const section = (id: string) => html.slice(html.indexOf(`id="${id}"`));
+
+		expect(section('about')).toContain(content.settings.aboutHeadingLines[1]);
+		expect(section('services')).toContain(content.settings.servicesHeading);
+		expect(section('classes')).toContain(content.settings.classesHeading);
+		expect(section('stories')).toContain(content.settings.storiesHeading);
+		expect(section('contact')).toContain(content.settings.connectHeading);
 	});
 
 	it('renders the CMS content it was given', () => {
@@ -223,5 +251,25 @@ describe('bio portrait', () => {
 
 	it('no longer emits an astro:assets build of raul-portrait.png', () => {
 		expect(html).not.toMatch(/raul-portrait\.[A-Za-z0-9_-]+\.(png|webp|avif)/);
+	});
+});
+
+describe('footer contact details', () => {
+	// They come from the same `operator` document the Impressum reads. A
+	// hardcoded copy here is the Abmahnung risk the single source exists to
+	// remove, so these assert the rendered links carry the CMS values.
+	it('builds the mailto, tel and WhatsApp links from the operator document', () => {
+		const footer = html.slice(html.indexOf('id="contact"'));
+
+		expect(footer).toContain(`href="mailto:${content.operator.email}"`);
+		expect(footer).toContain('href="tel:+49301234567"');
+		expect(footer).toContain('href="https://wa.me/49301234567"');
+	});
+
+	it('prints the email and phone as the operator document spells them', () => {
+		const footer = html.slice(html.indexOf('id="contact"'));
+
+		expect(footer).toContain(content.operator.email);
+		expect(footer).toContain(content.operator.phone);
 	});
 });

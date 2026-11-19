@@ -86,6 +86,11 @@ const siteSettings = {
 	heroTitleLines: ['Get stronger', 'Get healthier'],
 	heroSubLines: ['I offer personal & group training', 'designed to help you get', 'Stronger & Healthier'],
 	heroCtaLabel: 'Sign up now',
+	aboutHeadingLines: ['Meet', 'Coach Raul Payares'],
+	servicesHeading: 'Service',
+	classesHeading: 'Group classes',
+	storiesHeading: 'Success stories',
+	connectHeading: 'Stay connected',
 	bioParagraphs: [
 		'Hi,',
 		"I'm Raul Payares, originally from Colombia and now based in Berlin.",
@@ -97,7 +102,33 @@ const siteSettings = {
 	bookingUrl: PENDING('cal-com-event'),
 };
 
+/**
+ * § 5 DDG data, seeded as loud placeholders rather than plausible-looking
+ * fakes. The schema rejects a phone number that does not start with "+" and an
+ * email that is not an email, so the Studio shows this document as invalid
+ * until Raul fills it in — which is the launch gate, visible where he works
+ * rather than in a checklist he never opens.
+ *
+ * createOrReplace writes through the API and does not run that validation, so
+ * these land despite being invalid. That is deliberate: the alternative is an
+ * Impressum that 500s on a fresh dataset.
+ */
+const operator = {
+	_id: 'operator',
+	_type: 'operator',
+	name: 'Raul Payares',
+	street: 'TODO: Straße und Hausnummer',
+	city: 'TODO: PLZ Berlin',
+	country: 'Deutschland',
+	phone: 'TODO: Telefonnummer',
+	email: 'TODO: E-Mail-Adresse',
+	// Only if Raul is actually umsatzsteuerpflichtig — otherwise leave it unset
+	// and the Impressum drops the section. Kleinunternehmer nach § 19 UStG have none.
+	vatId: null,
+};
+
 const docs = [
+	operator,
 	...services.map((service, i) => ({
 		_id: `service-${i + 1}`,
 		_type: 'service',

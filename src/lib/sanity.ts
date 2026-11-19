@@ -103,7 +103,27 @@ export interface SiteSettings {
 	heroCtaLabel: string;
 	portraitImage: ImageWithAlt;
 	bioParagraphs: string[];
+	aboutHeadingLines: string[];
+	servicesHeading: string;
+	classesHeading: string;
+	storiesHeading: string;
+	connectHeading: string;
 	bookingUrl: string;
+}
+
+/**
+ * The operator's legal identity — § 5 DDG data, shared by the Impressum, the
+ * Datenschutzerklärung and the footer's contact links so the three can never
+ * disagree with each other.
+ */
+export interface Operator {
+	name: string;
+	street: string;
+	city: string;
+	country: string;
+	phone: string;
+	email: string;
+	vatId: string | null;
 }
 
 export interface Service {
@@ -126,10 +146,30 @@ export interface Social {
 
 export interface PageContent {
 	settings: SiteSettings;
+	operator: Operator;
 	services: Service[];
 	testimonials: Testimonial[];
 	socials: Social[];
 }
+
+// Named once because two different fetchers ask for it: the home page pulls it
+// with the rest of the page, the legal pages pull it on its own.
+const OPERATOR_QUERY = `*[_type == "operator"][0]{name, street, city, country, phone, email, vatId}`;
+
+/**
+ * Throws rather than returning null, for the same reason requireRows does.
+ * A missing operator document on the Impressum is not a blank section — it is
+ * an unreachable Pflichtangabe, which is worse than an error page.
+ */
+export const getOperator = async (preview: boolean): Promise<Operator> => {
+	const operator = await getClient(preview).fetch<Operator | null>(OPERATOR_QUERY);
+
+	if (!operator) {
+		throw new Error(`No operator document in the "${dataset}" dataset. Create and publish it in the Studio.`);
+	}
+
+	return operator;
+};
 
 /**
  * Throws on an empty result rather than returning one.
@@ -150,10 +190,11 @@ export const requireRows = <T>(rows: T[], what: string): T[] => {
 export const getPageContent = async (preview: boolean): Promise<PageContent> => {
 	const client = getClient(preview);
 
-	const [settings, services, testimonials, socials] = await Promise.all([
+	const [settings, operator, services, testimonials, socials] = await Promise.all([
 		client.fetch<SiteSettings | null>(
-			`*[_type == "siteSettings"][0]{heroTitleLines, heroSubLines, heroImage, heroCtaLabel, portraitImage, bioParagraphs, bookingUrl}`,
+			`*[_type == "siteSettings"][0]{heroTitleLines, heroSubLines, heroImage, heroCtaLabel, portraitImage, bioParagraphs, aboutHeadingLines, servicesHeading, classesHeading, storiesHeading, connectHeading, bookingUrl}`,
 		),
+		client.fetch<Operator | null>(OPERATOR_QUERY),
 		client.fetch<Service[]>(`*[_type == "service"]|order(order asc){title, body, href}`),
 		client.fetch<Testimonial[]>(`*[_type == "testimonial"]|order(order asc){quote, name, photo}`),
 		client.fetch<Social[]>(`*[_type == "social"]|order(order asc){network, label, href}`),
@@ -163,8 +204,13 @@ export const getPageContent = async (preview: boolean): Promise<PageContent> => 
 		throw new Error(`No siteSettings document in the "${dataset}" dataset. Create and publish it in the Studio.`);
 	}
 
+	if (!operator) {
+		throw new Error(`No operator document in the "${dataset}" dataset. Create and publish it in the Studio.`);
+	}
+
 	return {
 		settings,
+		operator,
 		services: requireRows(services, 'services'),
 		testimonials: requireRows(testimonials, 'testimonials'),
 		socials: requireRows(socials, 'social profiles'),

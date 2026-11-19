@@ -1,6 +1,18 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { operator } from '../legal';
+import { LEGAL_CACHE, setPageHeaders } from '../lib/headers';
+import { DRAFT_COOKIE, getOperator } from '../lib/sanity';
+
+// Renders per request because the operator details come from the CMS, and a
+// prerendered copy would keep showing the old address until the next deploy —
+// while the footer on the home page showed the new one. Two § 5 DDG answers
+// that disagree is worse than either being slightly stale.
+export const prerender = false;
+
+const preview = Astro.cookies.get(DRAFT_COOKIE)?.value === 'true';
+const operator = await getOperator(preview);
+
+setPageHeaders(Astro.response.headers, preview, LEGAL_CACHE);
 
 // TODO: add a "Kontaktformular" section when src/pages/api/contact.ts lands —
 // Art. 13 DSGVO needs the purpose, the legal basis and the retention period for

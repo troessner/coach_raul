@@ -6,42 +6,21 @@ import Logo from '../components/Logo.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import Testimonial from '../components/Testimonial.astro';
-import { operator, telHref, whatsAppHref } from '../legal';
+import { telHref, whatsAppHref } from '../legal';
+import { CONTENT_CACHE, setPageHeaders } from '../lib/headers';
 import { DRAFT_COOKIE, getPageContent, imageUrl } from '../lib/sanity';
 import gymWeights from '../assets/gym-weights.png';
 
 // Rendered per request, not at build time. That is what lets Raul hit Publish
 // in the Studio and see it live without a deploy — the whole reason this page
-// opts out of prerendering while the legal pages and the 404 do not.
+// opts out of prerendering. The legal pages do the same for the same reason;
+// only the 404 is still a static file.
 export const prerender = false;
 
-// public/_headers only reaches static asset responses, so a Worker-rendered
-// page inherits none of it. Both of these have to be set here or this page —
-// the one page still carrying placeholder content — is indexable and framable
-// while every prerendered page around it is not. Drop the noindex at launch,
-// at the same time as the site-wide one in public/_headers.
-Astro.response.headers.set('X-Robots-Tag', 'noindex');
-Astro.response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-
 const preview = Astro.cookies.get(DRAFT_COOKIE)?.value === 'true';
-const { settings, services, testimonials, socials } = await getPageContent(preview);
+const { settings, operator, services, testimonials, socials } = await getPageContent(preview);
 
-// This page's body depends on the draft cookie, so the cache has to key on it.
-// Without this, Cloudflare stores one body per URL and a previewing browser
-// gets whichever it lands on — edge-cached published HTML or freshly rendered
-// draft HTML — flipping between the two at random.
-Astro.response.headers.set('Vary', 'Cookie');
-
-if (preview) {
-	// Unpublished content must never be cached anywhere, by anyone.
-	Astro.response.headers.set('Cache-Control', 'private, no-store');
-} else {
-	// Cached at Cloudflare's edge for a minute, so a burst of traffic is one
-	// Sanity query rather than thousands. A publish therefore shows up within
-	// ~60s; drop this to 0 if that is ever too slow, at the cost of a query per
-	// page view.
-	Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
-}
+setPageHeaders(Astro.response.headers, preview, CONTENT_CACHE);
 
 // The footer photo above stays local on purpose: it is a design asset, not
 // content. Raul never swaps it from the Studio, and routing it through Sanity
@@ -113,9 +92,12 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 			/>
 			<div class="about-text">
 				<h2 class="display section-heading about-heading">
-					Meet
-					<br />
-					Coach Raul Payares
+					{settings.aboutHeadingLines.map((line, i) => (
+						<Fragment>
+							{i > 0 && <br />}
+							{line}
+						</Fragment>
+					))}
 				</h2>
 				<div class="bio">
 					{settings.bioParagraphs.map((paragraph) => (
@@ -126,7 +108,7 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 		</section>
 
 		<section class="shell services" id="services">
-			<h2 class="display section-heading services-heading">Service</h2>
+			<h2 class="display section-heading services-heading">{settings.servicesHeading}</h2>
 			<div class="service-grid">
 				{services.map((service) => (
 					<ServiceCard {...service} />
@@ -135,7 +117,7 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 		</section>
 
 		<section class="shell classes" id="classes">
-			<h2 class="display section-heading">Group classes</h2>
+			<h2 class="display section-heading">{settings.classesHeading}</h2>
 			<p class="classes-body">
 				Pick a time that suits you and book the slot — no account, no sign-up form. Booking opens in a new tab.
 			</p>
@@ -145,7 +127,7 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 		</section>
 
 		<section class="shell stories" id="stories">
-			<h2 class="display section-heading">Success stories</h2>
+			<h2 class="display section-heading">{settings.storiesHeading}</h2>
 			<div class="story-grid">
 				{testimonials.map((testimonial) => (
 					<Testimonial {...testimonial} />
@@ -168,7 +150,7 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 		<div class="shell footer-content">
 			<Logo color="accent" />
 			<div class="footer-connect">
-				<h2 class="display footer-heading">Stay connected</h2>
+				<h2 class="display footer-heading">{settings.connectHeading}</h2>
 				<ul class="contact">
 					<li>
 						<a href={`mailto:${operator.email}`}>{operator.email}</a>

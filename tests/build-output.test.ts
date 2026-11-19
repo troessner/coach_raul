@@ -7,9 +7,10 @@ import { describe, expect, it } from 'vitest';
  * failures that actually reach visitors: a dropped heading, a missing header
  * file, a canonical URL that stopped being absolute.
  *
- * Only the prerendered pages are here. The home page renders per request and
- * has no file in dist/ — it is rendered through Astro's container instead, in
- * tests/home-page.test.ts.
+ * Only the prerendered output is here, which is now the 404 and the files
+ * Cloudflare reads. The home page and the two legal pages all render per
+ * request and have no file in dist/ — they go through Astro's container
+ * instead, in tests/home-page.test.ts and tests/legal-pages.test.ts.
  *
  * Requires `npm run build` first — `npm run ci` and the GitHub workflow both
  * build before they test.
@@ -24,58 +25,31 @@ const read = (page: string) => {
 	return readFileSync(file, 'utf8');
 };
 
-const impressum = read('impressum/index.html');
-const datenschutz = read('datenschutz/index.html');
 const notFound = read('404.html');
 
-describe('legal pages', () => {
-	it('builds both pages with their headings', () => {
-		expect(impressum).toContain('>Impressum<');
-		expect(datenschutz).toContain('>Datenschutzerklärung<');
+describe('the legal pages are no longer static', () => {
+	it('leaves no stale prerendered copy behind in dist/', () => {
+		// They read the operator document per request now. A leftover file from an
+		// older build would be served by Cloudflare in preference to the Worker,
+		// which is how an Impressum silently goes back to showing the old address.
+		for (const page of ['impressum/index.html', 'datenschutz/index.html']) {
+			const file = fileURLToPath(new URL(`../dist/client/${page}`, import.meta.url));
+			expect(existsSync(file)).toBe(false);
+		}
 	});
-
-	it('names the statute the Impressum exists to satisfy', () => {
-		expect(impressum).toContain('§ 5 DDG');
-	});
-
-	it('cross-links the two pages', () => {
-		expect(impressum).toContain('href="/datenschutz/"');
-		expect(datenschutz).toContain('href="/impressum/"');
-	});
-
-	it('names the booking processor and the legal basis for it', () => {
-		// Art. 13 DSGVO: a new processor touching personal data has to be named on
-		// the page before it starts touching any.
-		expect(datenschutz).toContain('Cal.com');
-		expect(datenschutz).toContain('Art. 6 Abs. 1 lit. b DSGVO');
-	});
-
-	it('stays prerendered — these have no CMS content and need no request', () => {
-		// If either ever starts rendering per request, this file stops finding it
-		// and the failure says so rather than the page silently costing a Worker
-		// invocation on every visit.
-		expect(impressum.length).toBeGreaterThan(0);
-		expect(datenschutz.length).toBeGreaterThan(0);
-	});
-
-	it.todo("carries Raul's real address, phone and email instead of TODO placeholders");
 });
 
 describe('every prerendered page', () => {
 	it('declares an absolute canonical URL', () => {
 		// Relative values here are ignored. They have to come off Astro.site, so
 		// this also fails if `site` ever drops out of astro.config.mjs.
-		for (const page of [impressum, datenschutz, notFound]) {
-			expect(page).toMatch(/<link rel="canonical" href="https:\/\/[^"]+"/);
-		}
+		expect(notFound).toMatch(/<link rel="canonical" href="https:\/\/[^"]+"/);
 	});
 
 	it('loads no font or asset from a Google domain', () => {
 		// Remote Google Fonts hand every visitor's IP to Google, which is a standing
 		// Abmahnung risk for a German site. The font is self-hosted — keep it that way.
-		for (const page of [impressum, datenschutz]) {
-			expect(page).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
-		}
+		expect(notFound).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
 	});
 });
 
