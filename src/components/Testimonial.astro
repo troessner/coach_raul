@@ -9,8 +9,10 @@ const { quote, name, photo } = Astro.props;
 // Sanity's CDN does the resizing and the webp negotiation, so these bypass
 // astro:assets entirely — running both would download every image at build
 // time to re-encode what is already encoded.
-const src = imageUrl(photo, 480);
-const srcset = [320, 480, 640].map((w) => `${imageUrl(photo, w)} ${w}w`).join(', ');
+// Half the shell is ~495px, so the 2x grid asks for roughly 1000px on a
+// retina screen — the old 640 cap was sized for the four-column layout.
+const src = imageUrl(photo, 720);
+const srcset = [480, 720, 1000].map((w) => `${imageUrl(photo, w)} ${w}w`).join(', ');
 ---
 
 <figure class="testimonial">
@@ -18,10 +20,10 @@ const srcset = [320, 480, 640].map((w) => `${imageUrl(photo, w)} ${w}w`).join(',
 		class="photo"
 		src={src}
 		srcset={srcset}
-		sizes="(max-width: 700px) 45vw, 260px"
+		sizes="(max-width: 520px) 90vw, (max-width: 1180px) 45vw, 495px"
 		alt={photo.alt}
-		width="320"
-		height="480"
+		width="400"
+		height="500"
 		loading="lazy"
 		decoding="async"
 	/>
@@ -40,13 +42,19 @@ const srcset = [320, 480, 640].map((w) => `${imageUrl(photo, w)} ${w}w`).join(',
 	.photo {
 		width: 100%;
 		height: auto;
-		aspect-ratio: 2 / 3;
+		/* 2:3 was right at a quarter of the shell; at half of it the same ratio
+		   makes a photo tall enough to push the quote below the fold. */
+		aspect-ratio: 4 / 5;
 		object-fit: cover;
 		filter: grayscale(1);
 	}
 
 	.quote {
 		margin: 0;
+		/* Same cap as .bio. The column is ~495px now, which at this size is an
+		   85-character measure — long enough that the eye loses the line on the
+		   way back. The photo still fills the column; only the prose is capped. */
+		max-width: 46ch;
 		color: var(--muted);
 		font-size: 0.8rem;
 		line-height: 1.75;
