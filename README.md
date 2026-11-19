@@ -21,7 +21,7 @@ user accounts — that decision is what keeps the stack this small.
 | Payments        | **Stripe Payment Links** | Hosted checkout, no backend, no webhooks, no card data           |
 | Booking         | **Cal.com**              | Linked, not embedded — an iframe would leak visitor IPs on load  |
 | Contact         | **`mailto:` / WhatsApp** | No backend to post a form to, and nothing yet needs one          |
-| Hosting         | **Cloudflare Workers**   | Home page renders per request; everything else is a static asset |
+| Hosting         | **Cloudflare Workers**   | Home page and legal pages render per request; the rest is static |
 | Database        | **None**                 | Stripe, Cal.com and Sanity each hold their own state             |
 
 Class signups go through Cal.com rather than a form writing to our own database. Cal.com enforces
@@ -48,7 +48,8 @@ not a move to another platform.
 - [x] Responsive down to phone width
 - [x] Automatic responsive image optimization (PNG → WebP, ~6.9 MB → ~700 KB)
 - [x] CI: formatting, type-check, build, tests
-- [x] Sanity CMS — hero copy and photo, bio portrait and text, services, success stories and social links are all editable
+- [x] Sanity CMS — hero copy and photo, bio portrait and text, section headings, services, success
+      stories, social links and the legal/contact details are all editable
 - [x] Side-by-side preview of unpublished edits, and publishing without a deploy
 
 ### Requested, not yet built
@@ -69,12 +70,15 @@ These are encoded as `it.todo(...)` entries in `tests/build-output.test.ts` and
 placeholder-link gate, which cannot be a test (see below):
 
 - [ ] `X-Robots-Tag: noindex` removed from **both** `public/_headers` _and_
-      `src/pages/index.astro` — the home page renders per request and never sees
-      `_headers`. Do this **last**, once everything else here is ticked
+      `src/lib/headers.ts` — the per-request pages never see `_headers`, so the
+      header helper sets its own copy. Do this **last**, once everything else here is ticked
 - [ ] Domain swap, when a real domain is attached — four things change together:
       `site` in `astro.config.mjs`, the Sanity **CORS origin**, the Sanity
       **Studio host URL**, and the canonical/`og:url` they feed
-- [ ] `src/legal.ts` carries Raul's real address, phone and email — the Impressum is unusable without them
+- [ ] The `operator` document carries Raul's real address, phone and email — the Impressum is
+      unusable without them. This is **CMS content, not code** (Legal & contact details in the
+      Studio). The schema marks the document invalid until the `TODO:` placeholders are gone, so
+      the gate shows up where he works
 - [ ] `siteSettings.bookingUrl` holds the real Cal.com event link instead of the `example.com`
       placeholder. This is **CMS content, not code** — Raul pastes it in the Studio and it is live
       within ~60s. See the Cal.com runbook below
@@ -114,13 +118,13 @@ That is the whole reason the home page renders per request instead of being bake
 
 ### How the rendering splits
 
-| Route                           | Rendering         | Why                                           |
-| ------------------------------- | ----------------- | --------------------------------------------- |
-| `/`                             | per request       | Reads the CMS, so a publish has to show up    |
-| `/impressum/`, `/datenschutz/`  | prerendered       | Content comes from `src/legal.ts`, not Sanity |
-| `/404`                          | prerendered       | Static                                        |
-| `/studio`                       | prerendered shell | The Studio itself is a client-side React SPA  |
-| `/api/draft/enable`, `/disable` | per request       | Set and clear the preview cookie              |
+| Route                           | Rendering         | Why                                                        |
+| ------------------------------- | ----------------- | ---------------------------------------------------------- |
+| `/`                             | per request       | Reads the CMS, so a publish has to show up                 |
+| `/impressum/`, `/datenschutz/`  | per request       | Read the `operator` document, so an address change is live |
+| `/404`                          | prerendered       | Static                                                     |
+| `/studio`                       | prerendered shell | The Studio itself is a client-side React SPA               |
+| `/api/draft/enable`, `/disable` | per request       | Set and clear the preview cookie                           |
 
 Only `/` costs a Worker invocation on a normal visit, and its HTML is cached at Cloudflare's edge
 for 60 seconds (`s-maxage=60, stale-while-revalidate=600`). A publish is therefore visible within
@@ -183,12 +187,23 @@ optional, and emits no island at all. It must be `<VisualEditing enabled={previe
 
 ### What is editable
 
-| Document       | Holds                                                                                                    |
-| -------------- | -------------------------------------------------------------------------------------------------------- |
-| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio portrait, bio, booking URL |
-| `service`      | The four service cards — title, body, Stripe link, position                                              |
-| `testimonial`  | Success stories — quote, client name, photo, position                                                    |
-| `social`       | Footer icons — network, accessible label, profile URL, position                                          |
+| Document       | Holds                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio portrait, bio, every section heading, booking URL |
+| `operator`     | Legal and contact details — name, address, phone, email, VAT ID                                                                 |
+| `service`      | The four service cards — title, body, Stripe link, position                                                                     |
+| `testimonial`  | Success stories — quote, client name, photo, position                                                                           |
+| `social`       | Footer icons — network, accessible label, profile URL, position                                                                 |
+
+`operator` is the one document that is not marketing copy. It holds the § 5 DDG identity, and the
+Impressum, the Datenschutzerklärung and the footer's contact links all read it — which is why
+`/impressum/` and `/datenschutz/` render per request rather than being prerendered. A static copy
+would keep showing the old address until the next deploy while the footer showed the new one, and
+two § 5 DDG answers that disagree is the state worth engineering against.
+
+That does put a network call in front of a legally required page, so both legal pages carry a
+24-hour `stale-while-revalidate`: if Sanity is unreachable, Cloudflare keeps serving the last good
+copy instead of turning a Pflichtangabe into a 500.
 
 The footer photo is **not** in the CMS. It is a design asset rather than content, and keeping it
 local preserves the `astro:assets` optimization.
@@ -250,7 +265,7 @@ npx wrangler secret put SANITY_READ_TOKEN
 ```
 
 GitHub Actions sets placeholder values for the two public ones. That is honest rather than lazy:
-the build never queries Sanity, because the only CMS-driven page renders per request.
+the build never queries Sanity, because every CMS-driven page renders per request.
 
 ### Placeholder links
 
@@ -509,22 +524,25 @@ src/
 │   ├── impressum.astro    § 5 DDG anbieterkennzeichnung
 │   └── datenschutz.astro  Art. 13 DSGVO privacy notice
 ├── lib/
-│   └── sanity.ts      published + draft clients, typed GROQ, image URLs, guards
+│   ├── sanity.ts      published + draft clients, typed GROQ, image URLs, guards
+│   └── headers.ts     noindex, framing, Vary and cache policy for per-request pages
 ├── sanity/
 │   └── schemaTypes/   one file per document type
-└── legal.ts            operator name, address and contact, shared by both legal pages
-sanity.config.ts        Studio wiring: Presentation preview + the siteSettings singleton
+└── legal.ts            the tel:/WhatsApp transforms (the details themselves are in the CMS)
+sanity.config.ts        Studio wiring: Presentation preview + the two singletons
 scripts/
 └── seed-sanity.mjs     one-shot import of the formerly hardcoded copy
 tests/
 ├── home-page.test.ts       the home page, rendered through Astro's container
-├── build-output.test.ts    the prerendered pages, read from dist/client/
+├── legal-pages.test.ts     Impressum + Datenschutz, likewise, incl. the § 5 DDG fields
+├── build-output.test.ts    the 404 and the Cloudflare config files, read from dist/client/
 ├── legal.test.ts           phone/WhatsApp link transforms
 └── sanity.test.ts          the env and empty-result guards
 ```
 
-`src/pages/index.astro` renders per request; `tests/home-page.test.ts` therefore renders it through
-Astro's container against a fixture rather than reading a file out of `dist/`. That is also why
+The home page and the two legal pages render per request, so `tests/home-page.test.ts` and
+`tests/legal-pages.test.ts` render them through Astro's container against a fixture rather than
+reading files out of `dist/`. That is also why
 `astro.config.mjs` skips the Cloudflare adapter when `VITEST` is set — its Vite plugin otherwise
 takes the test runner into workerd, where the runner's own entry point cannot load.
 

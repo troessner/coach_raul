@@ -1,35 +1,25 @@
 /**
- * Operator details for the Impressum, the Datenschutzerklärung and the
- * contact links in the footer.
+ * The contact links the footer builds from the operator's phone number.
  *
- * TODO: every `TODO:` value below has to be Raul's real data before launch.
- * § 5 DDG requires a natural person's full name and a physical address — a PO
- * box is not enough — plus a phone number and an email address. Getting this
- * wrong is the single most reliably abgemahnt mistake on a German site.
+ * The operator's details themselves live in the CMS — see the `operator`
+ * singleton in src/sanity/schemaTypes/operator.ts — so that the Impressum, the
+ * Datenschutzerklärung and the footer all read one document and cannot drift
+ * apart. Only the two transforms stay here: they are pure, and they are what a
+ * wrong number silently breaks.
  */
-export const operator = {
-	name: 'Raul Payares',
-	street: 'TODO: Straße und Hausnummer',
-	city: 'TODO: PLZ Berlin',
-	country: 'Deutschland',
-	phone: 'TODO: Telefonnummer',
-	email: 'TODO: E-Mail-Adresse',
-	// Only if Raul is actually umsatzsteuerpflichtig — otherwise leave null and
-	// the Impressum drops the section. Kleinunternehmer nach § 19 UStG have none.
-	vatId: null as string | null,
-};
 
 /**
  * `tel:` wants the number without spaces; `wa.me` wants bare digits, no `+`.
- * Both only work if `phone` above is stored in international format (+49 …),
- * so a German number written as `030 …` will produce a dead WhatsApp link.
+ * Both only work if the number is stored in international format (+49 …), so a
+ * German number written as `030 …` produces a dead WhatsApp link. The operator
+ * schema rejects a number that does not start with `+` for that reason.
  *
  * The `(0)` in the common German `+49 (0)30 …` form is a trunk prefix that is
  * only dialled domestically — keeping it would send the call to the wrong
  * number, so it is dropped before the digits are collected.
  *
- * These assume Raul's WhatsApp sits on the same number as his phone. Split
- * `operator.phone` into two fields if that turns out not to be true.
+ * These assume Raul's WhatsApp sits on the same number as his phone. Split the
+ * operator's `phone` into two fields if that turns out not to be true.
  */
 export const telHref = (phone: string) => `tel:${phone.replace(/\(0\)/, '').replace(/\s/g, '')}`;
 
