@@ -131,6 +131,11 @@ export interface SiteSettings {
 	/** Rich text, or the plain strings pre-migration documents still hold. */
 	bioParagraphs: RichText;
 	aboutHeadingLines: string[];
+	/** Optional per-section backgrounds. Absent means the section stays on --bg. */
+	aboutBackground: SanityImageSource | null;
+	servicesBackground: SanityImageSource | null;
+	classesBackground: SanityImageSource | null;
+	storiesBackground: SanityImageSource | null;
 	servicesHeading: string;
 	classesHeading: string;
 	storiesHeading: string;
@@ -235,6 +240,10 @@ export const getPageContent = async (preview: boolean): Promise<PageContent> => 
 				portraitImage,
 				"bioParagraphs": coalesce(bioParagraphs, []),
 				"aboutHeadingLines": coalesce(aboutHeadingLines, []),
+				aboutBackground,
+				servicesBackground,
+				classesBackground,
+				storiesBackground,
 				servicesHeading,
 				classesHeading,
 				storiesHeading,

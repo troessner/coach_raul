@@ -28,6 +28,11 @@ const content: PageContent = {
 		},
 		bioParagraphs: ['Hi,', "I'm Raul Payares, originally from Colombia and now based in Berlin."],
 		aboutHeadingLines: ['Meet', 'Coach Raul Payares'],
+		// The common case: no section backgrounds, so every section stays on --bg.
+		aboutBackground: null,
+		servicesBackground: null,
+		classesBackground: null,
+		storiesBackground: null,
 		servicesHeading: 'Service',
 		classesHeading: 'Group classes',
 		storiesHeading: 'Success stories',
@@ -82,6 +87,7 @@ vi.mock('../src/lib/sanity', async (importOriginal) => {
 let html = '';
 let previewHtml = '';
 let sparseHtml = '';
+let backgroundHtml = '';
 let response: Response;
 
 beforeAll(async () => {
@@ -121,6 +127,16 @@ beforeAll(async () => {
 		testimonials: [{ ...content.testimonials[0], photo: null }],
 	};
 	sparseHtml = await container.renderToString(Index, { request: new Request('https://coach-raul.test/') });
+
+	// One section given a background, the rest left without one.
+	current = {
+		...content,
+		settings: {
+			...content.settings,
+			aboutBackground: { _type: 'image', asset: { _ref: 'image-bg-2000x1200-png' } },
+		},
+	};
+	backgroundHtml = await container.renderToString(Index, { request: new Request('https://coach-raul.test/') });
 	current = content;
 });
 
@@ -372,5 +388,51 @@ describe('section jump links', () => {
 		// Several navs on this page — this one and the legal links in the footer.
 		// Without a label they are announced identically.
 		expect(html).toContain('<nav class="site-nav" aria-label="Sections"');
+	});
+});
+
+describe('section backgrounds', () => {
+	const section = (source: string, id: string) => {
+		const start = source.indexOf(`id="${id}"`);
+
+		return source.slice(start, source.indexOf('</section>', start));
+	};
+
+	it('renders nothing extra when no background is set', () => {
+		// The default, and the state every existing document is in: the section
+		// falls back to the page's black background with no stray markup.
+		//
+		// Matched as tags, not as bare strings. Astro inlines the component's
+		// scoped CSS into the page, so the class names appear in a <style> block
+		// whether or not anything uses them — asserting on the string alone
+		// passes here and would still pass if the markup leaked.
+		expect(html).not.toMatch(/<img[^>]*class="[^"]*section-photo/);
+		expect(html).not.toMatch(/<div[^>]*class="[^"]*section-scrim/);
+	});
+
+	it('renders the photo and its scrim for the section that has one', () => {
+		const about = section(backgroundHtml, 'about');
+
+		expect(about).toMatch(/<img[^>]*class="[^"]*section-photo/);
+		expect(about).toMatch(/<div[^>]*class="[^"]*section-scrim/);
+		expect(about).toContain('srcset=');
+	});
+
+	it('leaves the other sections untouched', () => {
+		// Proves each section reads its own field rather than one shared flag.
+		for (const id of ['services', 'classes', 'stories']) {
+			expect(section(backgroundHtml, id)).not.toMatch(/<img[^>]*class="[^"]*section-photo/);
+		}
+	});
+
+	it('hides the background from assistive technology', () => {
+		// Decorative: it carries nothing the text does not already say, so it is
+		// hidden rather than described. An empty alt alone still leaves the img
+		// in the accessibility tree on some combinations.
+		const about = section(backgroundHtml, 'about');
+		const img = about.match(/<img[^>]*class="[^"]*section-photo[^>]*>/)?.[0] ?? '';
+
+		expect(img).toContain('alt=""');
+		expect(img).toContain('aria-hidden="true"');
 	});
 });

@@ -4,6 +4,7 @@ import { VisualEditing } from '@sanity/astro/visual-editing';
 import Layout from '../layouts/Layout.astro';
 import Logo from '../components/Logo.astro';
 import ServiceCard from '../components/ServiceCard.astro';
+import SectionBackground from '../components/SectionBackground.astro';
 import SiteNav from '../components/SiteNav.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import Testimonial from '../components/Testimonial.astro';
@@ -107,60 +108,72 @@ const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitI
 	</header>
 
 	<main>
-		<section class="shell about" id="about">
-			{portraitSrc && (
-				<img
-					class="portrait"
-					src={portraitSrc}
-					srcset={portraitSrcset}
-					sizes="(max-width: 860px) 80vw, 340px"
-					alt={settings.portraitImage?.alt ?? ''}
-					width="340"
-					height="453"
-					loading="lazy"
-					decoding="async"
-				/>
-			)}
-			<div class="about-text">
-				<h2 class="display section-heading about-heading">
-					{settings.aboutHeadingLines.map((line, i) => (
-						<Fragment>
-							{i > 0 && <br />}
-							{line}
-						</Fragment>
-					))}
-				</h2>
-				<!-- set:html, because the bio is rendered Portable Text rather than a
+		<section class="section" id="about">
+			<SectionBackground image={settings.aboutBackground} />
+			<div class="shell about">
+				{portraitSrc && (
+					<img
+						class="portrait"
+						src={portraitSrc}
+						srcset={portraitSrcset}
+						sizes="(max-width: 860px) 80vw, 340px"
+						alt={settings.portraitImage?.alt ?? ''}
+						width="340"
+						height="453"
+						loading="lazy"
+						decoding="async"
+					/>
+				)}
+				<div class="about-text">
+					<h2 class="display section-heading about-heading">
+						{settings.aboutHeadingLines.map((line, i) => (
+							<Fragment>
+								{i > 0 && <br />}
+								{line}
+							</Fragment>
+						))}
+					</h2>
+					<!-- set:html, because the bio is rendered Portable Text rather than a
 				     list of strings. renderRichText escapes the text it emits. -->
-				<div class="bio" set:html={renderRichText(settings.bioParagraphs)} />
+					<div class="bio" set:html={renderRichText(settings.bioParagraphs)} />
+				</div>
 			</div>
 		</section>
 
-		<section class="shell services" id="services">
-			<h2 class="display section-heading services-heading">{settings.servicesHeading}</h2>
-			<div class="service-grid">
-				{services.map((service) => (
-					<ServiceCard {...service} />
-				))}
+		<section class="section" id="services">
+			<SectionBackground image={settings.servicesBackground} />
+			<div class="shell services">
+				<h2 class="display section-heading services-heading">{settings.servicesHeading}</h2>
+				<div class="service-grid">
+					{services.map((service) => (
+						<ServiceCard {...service} />
+					))}
+				</div>
 			</div>
 		</section>
 
-		<section class="shell classes" id="classes">
-			<h2 class="display section-heading">{settings.classesHeading}</h2>
-			<p class="classes-body">
-				Pick a time that suits you and book the slot — no account, no sign-up form. Booking opens in a new tab.
-			</p>
-			<a class="cta" href={settings.bookingUrl} rel="noopener noreferrer" target="_blank">
-				Book a class
-			</a>
+		<section class="section" id="classes">
+			<SectionBackground image={settings.classesBackground} />
+			<div class="shell classes">
+				<h2 class="display section-heading">{settings.classesHeading}</h2>
+				<p class="classes-body">
+					Pick a time that suits you and book the slot — no account, no sign-up form. Booking opens in a new tab.
+				</p>
+				<a class="cta" href={settings.bookingUrl} rel="noopener noreferrer" target="_blank">
+					Book a class
+				</a>
+			</div>
 		</section>
 
-		<section class="shell stories" id="stories">
-			<h2 class="display section-heading">{settings.storiesHeading}</h2>
-			<div class="story-grid">
-				{testimonials.map((testimonial) => (
-					<Testimonial {...testimonial} />
-				))}
+		<section class="section" id="stories">
+			<SectionBackground image={settings.storiesBackground} />
+			<div class="shell stories">
+				<h2 class="display section-heading">{settings.storiesHeading}</h2>
+				<div class="story-grid">
+					{testimonials.map((testimonial) => (
+						<Testimonial {...testimonial} />
+					))}
+				</div>
 			</div>
 		</section>
 	</main>
@@ -296,6 +309,21 @@ const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitI
 		font-size: clamp(0.9rem, 2vw, 1.05rem);
 		font-weight: 300;
 		line-height: 1.6;
+	}
+
+	/* ---------- section backgrounds ---------- */
+	/*
+	 * The wrapper exists so the photo can be full-bleed while the content stays
+	 * inside .shell. Putting the background on the .shell element itself would
+	 * cap it at --maxw and render as a centred panel rather than a background.
+	 */
+	.section {
+		position: relative;
+	}
+
+	/* Above the absolutely positioned photo and scrim inside .section. */
+	.section > .shell {
+		position: relative;
 	}
 
 	/* ---------- about ---------- */
