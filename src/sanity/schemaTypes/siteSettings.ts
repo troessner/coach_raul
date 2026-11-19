@@ -115,6 +115,38 @@ export const siteSettings = defineType({
 			validation: (rule) => rule.required().max(40),
 		}),
 		defineField({
+			name: 'aboutBackground',
+			title: 'Bio section background',
+			description:
+				'Optional — behind the portrait and bio. Leave it empty and the section stays plain black. The photo is darkened heavily so the text over it stays readable, so pick something with shape rather than detail. At least 1600px on the long edge; it is cropped to fill, so keep the subject near the centre.',
+			type: 'image',
+			options: { hotspot: true },
+		}),
+		defineField({
+			name: 'servicesBackground',
+			title: 'Services section background',
+			description:
+				'Optional — behind the four service cards. Leave it empty and the section stays plain black. The photo is darkened heavily so the text over it stays readable, so pick something with shape rather than detail. At least 1600px on the long edge; it is cropped to fill, so keep the subject near the centre.',
+			type: 'image',
+			options: { hotspot: true },
+		}),
+		defineField({
+			name: 'classesBackground',
+			title: 'Group classes section background',
+			description:
+				'Optional — behind the booking link. Leave it empty and the section stays plain black. The photo is darkened heavily so the text over it stays readable, so pick something with shape rather than detail. At least 1600px on the long edge; it is cropped to fill, so keep the subject near the centre.',
+			type: 'image',
+			options: { hotspot: true },
+		}),
+		defineField({
+			name: 'storiesBackground',
+			title: 'Success stories section background',
+			description:
+				'Optional — behind the client stories. Leave it empty and the section stays plain black. The photo is darkened heavily so the text over it stays readable, so pick something with shape rather than detail. At least 1600px on the long edge; it is cropped to fill, so keep the subject near the centre.',
+			type: 'image',
+			options: { hotspot: true },
+		}),
+		defineField({
 			name: 'bookingUrl',
 			title: 'Cal.com booking link for group classes',
 			description:

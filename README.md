@@ -197,13 +197,29 @@ optional, and emits no island at all. It must be `<VisualEditing enabled={previe
 
 ### What is editable
 
-| Document       | Holds                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio portrait, bio (rich text), every section heading, booking URL |
-| `operator`     | Legal and contact details — name, address, phone, email, VAT ID                                                                             |
-| `service`      | The four service cards — title, body, Stripe link, position                                                                                 |
-| `testimonial`  | Success stories — quote (rich text), client name, photo, position                                                                           |
-| `social`       | Footer icons — network, accessible label, profile URL, position                                                                             |
+| Document       | Holds                                                                                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio portrait, bio (rich text), every section heading, optional per-section background photos, booking URL |
+| `operator`     | Legal and contact details — name, address, phone, email, VAT ID                                                                                                                     |
+| `service`      | The four service cards — title, body, Stripe link, position                                                                                                                         |
+| `testimonial`  | Success stories — quote (rich text), client name, photo, position                                                                                                                   |
+| `social`       | Footer icons — network, accessible label, profile URL, position                                                                                                                     |
+
+### Section backgrounds
+
+Each of the four main sections takes an optional background photo from `siteSettings`. Leave the
+field empty and the section stays on `--bg`, which is what every section does today — no field, no
+markup, no request.
+
+The photo is full-bleed, which is why those sections are a plain `.section` wrapper with the
+`.shell` inside rather than being the `.shell` themselves. A background on the `.shell` element
+would stop at `--maxw` and read as a centred panel.
+
+Over it sits a **`rgba(0, 0, 0, 0.8)` scrim, and that number is derived rather than chosen**. The
+dimmest text on the page is `--muted` (`#9d9d9d`); over the brightest possible photo it needs the
+scrim at 0.79 to hold 4.5:1, so 0.8 is the weakest value that is still safe. Lower it and the
+story quotes stop being readable on a light upload. The photo is texture under the type, not
+competition for it — pick images with shape rather than detail.
 
 ### Rich text
 
