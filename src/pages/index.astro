@@ -329,6 +329,14 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 		align-items: start;
 	}
 
+	/* Two up rather than four: a story is a paragraph of prose, and at a quarter
+	   of the shell it wraps every four or five words. The wider gap keeps the
+	   two columns reading as separate stories rather than one block of text. */
+	.story-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: clamp(2rem, 5vw, 4rem);
+	}
+
 	/* ---------- classes ---------- */
 	.classes {
 		padding-block: clamp(3rem, 8vw, 6rem);
@@ -444,15 +452,15 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 			margin-left: 0;
 		}
 
-		.service-grid,
-		.story-grid {
+		.service-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 			gap: 2.5rem;
 		}
 	}
 
 	@media (max-width: 520px) {
-		.service-grid {
+		.service-grid,
+		.story-grid {
 			grid-template-columns: minmax(0, 1fr);
 		}
 	}
