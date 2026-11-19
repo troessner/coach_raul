@@ -1,0 +1,56 @@
+---
+interface Props {
+	/** One entry per section, in page order. `id` must match a section's id. */
+	sections: readonly { readonly id: string; readonly label: string }[];
+}
+
+const { sections } = Astro.props;
+---
+
+<nav class="site-nav" aria-label="Sections">
+	<ul>
+		{sections.map((section) => (
+			<li>
+				<a href={`#${section.id}`}>{section.label}</a>
+			</li>
+		))}
+	</ul>
+</nav>
+
+<style>
+	.site-nav ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: clamp(1rem, 2.5vw, 2.25rem);
+	}
+
+	a {
+		display: inline-block;
+		text-decoration: none;
+		font-size: 0.72rem;
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		/* Full white rather than --muted: this sits on a photo, where a dimmed
+		   grey loses the 4.5:1 it holds against the flat background. */
+		color: var(--fg);
+		padding-block: 0.35rem;
+		border-bottom: 1px solid transparent;
+	}
+
+	a:hover,
+	a:focus-visible {
+		border-bottom-color: var(--accent);
+	}
+
+	@media (max-width: 520px) {
+		a {
+			font-size: 0.66rem;
+			letter-spacing: 0.08em;
+		}
+	}
+</style>
