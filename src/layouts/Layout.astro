@@ -53,8 +53,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		box-sizing: border-box;
 	}
 
-	html {
-		scroll-behavior: smooth;
+	/* Smooth scrolling only for people who have not asked for less motion.
+	   The jump links in the hero are what make this fire, and a long animated
+	   scroll is a vestibular trigger — unguarded, it overrides an OS-level
+	   accessibility preference. */
+	@media (prefers-reduced-motion: no-preference) {
+		html {
+			scroll-behavior: smooth;
+		}
 	}
 
 	body {

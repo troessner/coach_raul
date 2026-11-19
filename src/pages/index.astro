@@ -4,6 +4,7 @@ import { VisualEditing } from '@sanity/astro/visual-editing';
 import Layout from '../layouts/Layout.astro';
 import Logo from '../components/Logo.astro';
 import ServiceCard from '../components/ServiceCard.astro';
+import SiteNav from '../components/SiteNav.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import Testimonial from '../components/Testimonial.astro';
 import { telHref, whatsAppHref } from '../legal';
@@ -34,6 +35,24 @@ setPageHeaders(Astro.response.headers, preview, CONTENT_CACHE);
 const heroSrc = imageUrl(settings.heroImage, 1600);
 const heroSrcset = [640, 1024, 1600].map((w) => `${imageUrl(settings.heroImage, w)} ${w}w`).join(', ');
 
+/**
+ * The jump links in the hero. `id` has to match a section's id on this page —
+ * tests/home-page.test.ts asserts every one of them resolves, because a nav
+ * entry pointing at a section that was renamed is a link that silently does
+ * nothing.
+ *
+ * Labels are short on purpose and separate from the section headings in the
+ * CMS: "Stories" reads better here than "Success stories", and tying the two
+ * together would mean one cannot change without the other.
+ */
+const SECTIONS = [
+	{ id: 'about', label: 'About' },
+	{ id: 'services', label: 'Services' },
+	{ id: 'classes', label: 'Classes' },
+	{ id: 'stories', label: 'Stories' },
+	{ id: 'contact', label: 'Contact' },
+] as const;
+
 const portraitSrc = imageUrl(settings.portraitImage, 680);
 const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitImage, w)} ${w}w`).join(', ');
 ---
@@ -59,7 +78,10 @@ const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitI
 		)}
 		<div class="hero-overlay"></div>
 		<div class="shell hero-content">
-			<Logo />
+			<div class="hero-top">
+				<Logo />
+				<SiteNav sections={SECTIONS} />
+			</div>
 			<div class="hero-copy">
 				<h1 class="display hero-title">
 					{settings.heroTitleLines.map((line, i) => (
@@ -255,6 +277,14 @@ const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitI
 		justify-content: space-between;
 		gap: 3rem;
 		padding-block: clamp(1.75rem, 4vw, 2.75rem) clamp(2.5rem, 6vw, 4.5rem);
+	}
+
+	.hero-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: clamp(1.5rem, 4vw, 3rem);
+		flex-wrap: wrap;
 	}
 
 	.hero-title {

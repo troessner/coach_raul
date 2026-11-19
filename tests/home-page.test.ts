@@ -348,3 +348,29 @@ describe('a document missing the fields a later schema added', () => {
 		expect(withoutAlt).toEqual([]);
 	});
 });
+
+describe('section jump links', () => {
+	const navLinks = () => {
+		const nav = html.slice(html.indexOf('<nav class="site-nav"'));
+
+		return [...nav.slice(0, nav.indexOf('</nav>')).matchAll(/href="#([^"]+)"/g)].map((m) => m[1]);
+	};
+
+	it('offers a link to every section', () => {
+		expect(navLinks()).toEqual(['about', 'services', 'classes', 'stories', 'contact']);
+	});
+
+	it('points every link at a target that exists on the page', () => {
+		// The failure this exists for: renaming a section's id leaves a link that
+		// looks fine, is keyboard reachable, and silently does nothing.
+		for (const id of navLinks()) {
+			expect(html).toContain(`id="${id}"`);
+		}
+	});
+
+	it('names the nav for screen readers', () => {
+		// Several navs on this page — this one and the legal links in the footer.
+		// Without a label they are announced identically.
+		expect(html).toContain('<nav class="site-nav" aria-label="Sections"');
+	});
+});
