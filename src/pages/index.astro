@@ -30,8 +30,11 @@ setPageHeaders(Astro.response.headers, preview, CONTENT_CACHE);
 // Capped at 1600: Sanity's `fit: max` never upscales, so a wider entry would
 // advertise a width the asset cannot deliver and the browser would pick it
 // believing it is larger. The current hero is 1285px on its long edge.
-const heroSizes = [640, 1024, 1600];
-const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}w`).join(', ');
+const heroSrc = imageUrl(settings.heroImage, 1600);
+const heroSrcset = [640, 1024, 1600].map((w) => `${imageUrl(settings.heroImage, w)} ${w}w`).join(', ');
+
+const portraitSrc = imageUrl(settings.portraitImage, 680);
+const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitImage, w)} ${w}w`).join(', ');
 ---
 
 <Layout
@@ -40,16 +43,19 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 >
 	<header class="hero">
 		<!-- No width/height: .hero-photo is absolutely positioned and fills the
-		     header, so there is no layout for an intrinsic size to shift. -->
-		<img
-			class="hero-photo"
-			src={imageUrl(settings.heroImage, 1600)}
-			srcset={heroSrcset}
-			sizes="100vw"
-			alt={settings.heroImage.alt}
-			loading="eager"
-			fetchpriority="high"
-		/>
+		     header, so there is no layout for an intrinsic size to shift. The
+		     overlay and the copy sit on the background colour without it. -->
+		{heroSrc && (
+			<img
+				class="hero-photo"
+				src={heroSrc}
+				srcset={heroSrcset}
+				sizes="100vw"
+				alt={settings.heroImage?.alt ?? ''}
+				loading="eager"
+				fetchpriority="high"
+			/>
+		)}
 		<div class="hero-overlay"></div>
 		<div class="shell hero-content">
 			<Logo />
@@ -79,17 +85,19 @@ const heroSrcset = heroSizes.map((w) => `${imageUrl(settings.heroImage, w)} ${w}
 
 	<main>
 		<section class="shell about" id="about">
-			<img
-				class="portrait"
-				src={imageUrl(settings.portraitImage, 680)}
-				srcset={[400, 680, 900].map((w) => `${imageUrl(settings.portraitImage, w)} ${w}w`).join(', ')}
-				sizes="(max-width: 860px) 80vw, 340px"
-				alt={settings.portraitImage.alt}
-				width="340"
-				height="453"
-				loading="lazy"
-				decoding="async"
-			/>
+			{portraitSrc && (
+				<img
+					class="portrait"
+					src={portraitSrc}
+					srcset={portraitSrcset}
+					sizes="(max-width: 860px) 80vw, 340px"
+					alt={settings.portraitImage?.alt ?? ''}
+					width="340"
+					height="453"
+					loading="lazy"
+					decoding="async"
+				/>
+			)}
 			<div class="about-text">
 				<h2 class="display section-heading about-heading">
 					{settings.aboutHeadingLines.map((line, i) => (

@@ -20,8 +20,17 @@ yarn-error.log*
 pnpm-debug.log*
 
 # environment variables
+# .env.* rather than two named files: an editor swap file (.env.swp) holds the
+# same secrets as the file it is editing, and `git add -A` would have staged
+# one. .env.example is the one that must stay tracked.
 .env
-.env.production
+.env.*
+!.env.example
+
+# editor swap/backup files, wherever they land
+*.swp
+*.swo
+*~
 
 # macOS-specific files
 .DS_Store

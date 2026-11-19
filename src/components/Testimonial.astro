@@ -13,20 +13,25 @@ const { quote, name, photo } = Astro.props;
 // retina screen — the old 640 cap was sized for the four-column layout.
 const src = imageUrl(photo, 720);
 const srcset = [480, 720, 1000].map((w) => `${imageUrl(photo, w)} ${w}w`).join(', ');
+// A story without a photo still carries the quote, which is the part that
+// matters. The slot collapses rather than the page failing.
+const hasPhoto = src !== null;
 ---
 
 <figure class="testimonial">
-	<img
-		class="photo"
-		src={src}
-		srcset={srcset}
-		sizes="(max-width: 520px) 90vw, (max-width: 1180px) 45vw, 495px"
-		alt={photo.alt}
-		width="400"
-		height="500"
-		loading="lazy"
-		decoding="async"
-	/>
+	{hasPhoto && (
+		<img
+			class="photo"
+			src={src}
+			srcset={srcset}
+			sizes="(max-width: 520px) 90vw, (max-width: 1180px) 45vw, 495px"
+			alt={photo?.alt ?? ''}
+			width="400"
+			height="500"
+			loading="lazy"
+			decoding="async"
+		/>
+	)}
 	<blockquote class="quote">{quote}</blockquote>
 	<figcaption class="name">{name}</figcaption>
 </figure>
