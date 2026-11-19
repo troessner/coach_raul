@@ -195,6 +195,29 @@ optional, and emits no island at all. It must be `<VisualEditing enabled={previe
 | `testimonial`  | Success stories — quote, client name, photo, position                                                                           |
 | `social`       | Footer icons — network, accessible label, profile URL, position                                                                 |
 
+### What fails loudly, and what does not
+
+A field added to the schema does not exist on documents written before it. Twice that took the
+live site down: `.map` of an absent array and `imageUrl` of an absent image both throw while the
+page is still assembling its frontmatter, so one unfilled field became a 500 with an empty body.
+The draft copy of a document is a second helping of the same trap — in preview a draft shadows
+the published document completely, so a complete published `siteSettings` still previewed as a
+500 while its older draft lacked the new fields.
+
+So the two are deliberately split:
+
+- **Degrades.** Headings, hero and portrait photos, story photos, bio copy. Arrays are
+  `coalesce(..., [])` in the GROQ query and `imageUrl` returns `null` for a missing source, which
+  the pages render around. A missing field is then a gap on the page — visible in the Studio,
+  harmless to a visitor.
+- **Still throws.** The `operator` document, a missing `siteSettings` document, and an empty
+  `service` / `testimonial` / `social` list. An Impressum without an address is a missing
+  Pflichtangabe rather than a cosmetic gap, and an empty result set means a wrong dataset or an
+  unpublished document — failures worth stopping the request for.
+
+`tests/home-page.test.ts` renders the page with every optional field absent, which is the case
+that used to 500.
+
 `operator` is the one document that is not marketing copy. It holds the § 5 DDG identity, and the
 Impressum, the Datenschutzerklärung and the footer's contact links all read it — which is why
 `/impressum/` and `/datenschutz/` render per request rather than being prerendered. A static copy

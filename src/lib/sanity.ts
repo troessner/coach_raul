@@ -89,9 +89,19 @@ export const getClient = (preview: boolean): SanityClient => (preview ? draftCli
 
 const builder = createImageUrlBuilder(publishedClient);
 
-/** Sanity's CDN resizes and re-encodes on its own, so these never touch astro:assets. */
-export const imageUrl = (source: SanityImageSource, width: number) =>
-	builder.image(source).width(width).auto('format').fit('max').url();
+/**
+ * Sanity's CDN resizes and re-encodes on its own, so these never touch
+ * astro:assets.
+ *
+ * Returns null for a missing source rather than throwing. The builder throws
+ * "Unable to resolve image URL from source (null)", and because that happens
+ * while the page is still assembling its frontmatter it takes the whole
+ * response with it — a 500 with an empty body, for one absent photo. Callers
+ * render the <img> only when there is a URL, so the page loses an image
+ * instead of losing the page.
+ */
+export const imageUrl = (source: SanityImageSource | null | undefined, width: number): string | null =>
+	source ? builder.image(source).width(width).auto('format').fit('max').url() : null;
 
 /** A Sanity image plus the alt text its schema requires alongside it. */
 export type ImageWithAlt = SanityImageSource & { alt: string };
@@ -99,9 +109,9 @@ export type ImageWithAlt = SanityImageSource & { alt: string };
 export interface SiteSettings {
 	heroTitleLines: string[];
 	heroSubLines: string[];
-	heroImage: ImageWithAlt;
+	heroImage: ImageWithAlt | null;
 	heroCtaLabel: string;
-	portraitImage: ImageWithAlt;
+	portraitImage: ImageWithAlt | null;
 	bioParagraphs: string[];
 	aboutHeadingLines: string[];
 	servicesHeading: string;
@@ -135,7 +145,7 @@ export interface Service {
 export interface Testimonial {
 	quote: string;
 	name: string;
-	photo: ImageWithAlt;
+	photo: ImageWithAlt | null;
 }
 
 export interface Social {
@@ -191,8 +201,28 @@ export const getPageContent = async (preview: boolean): Promise<PageContent> => 
 	const client = getClient(preview);
 
 	const [settings, operator, services, testimonials, socials] = await Promise.all([
+		// coalesce(..., []) on every array: a field added to the schema does not
+		// exist on documents written before it, and `.map` of undefined throws
+		// while the page is still assembling — a 500 for a field nobody has
+		// filled in yet. An empty array renders an empty section instead, which
+		// is visible in the Studio and harmless to a visitor. This is also true
+		// of a *draft* written before the field existed, which shadows the
+		// published document in preview even when the published one is complete.
 		client.fetch<SiteSettings | null>(
-			`*[_type == "siteSettings"][0]{heroTitleLines, heroSubLines, heroImage, heroCtaLabel, portraitImage, bioParagraphs, aboutHeadingLines, servicesHeading, classesHeading, storiesHeading, connectHeading, bookingUrl}`,
+			`*[_type == "siteSettings"][0]{
+				"heroTitleLines": coalesce(heroTitleLines, []),
+				"heroSubLines": coalesce(heroSubLines, []),
+				heroImage,
+				heroCtaLabel,
+				portraitImage,
+				"bioParagraphs": coalesce(bioParagraphs, []),
+				"aboutHeadingLines": coalesce(aboutHeadingLines, []),
+				servicesHeading,
+				classesHeading,
+				storiesHeading,
+				connectHeading,
+				bookingUrl
+			}`,
 		),
 		client.fetch<Operator | null>(OPERATOR_QUERY),
 		client.fetch<Service[]>(`*[_type == "service"]|order(order asc){title, body, href}`),

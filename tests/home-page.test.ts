@@ -58,20 +58,30 @@ const content: PageContent = {
 	socials: [{ network: 'instagram', label: 'Instagram', href: 'https://example.com/pending-instagram' }],
 };
 
+/**
+ * What getPageContent returns for the next render. Swapped in beforeAll so the
+ * sparse case below can be rendered by the same mock.
+ */
+let current: PageContent = content;
+
 vi.mock('../src/lib/sanity', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('../src/lib/sanity')>().catch(() => null);
 
 	return {
 		// Re-exported so the page's own imports resolve; the queries are replaced.
 		DRAFT_COOKIE: 'sanity-draft-mode',
-		imageUrl: (_source: unknown, width: number) => `https://cdn.sanity.io/images/p/production/abc.png?w=${width}`,
-		getPageContent: async () => content,
+		// Mirrors the real null-for-missing-source contract, which is the whole
+		// point of the sparse render below.
+		imageUrl: (source: unknown, width: number) =>
+			source ? `https://cdn.sanity.io/images/p/production/abc.png?w=${width}` : null,
+		getPageContent: async () => current,
 		...(actual ? {} : {}),
 	};
 });
 
 let html = '';
 let previewHtml = '';
+let sparseHtml = '';
 let response: Response;
 
 beforeAll(async () => {
@@ -92,6 +102,26 @@ beforeAll(async () => {
 	previewHtml = await container.renderToString(Index, {
 		request: new Request('https://coach-raul.test/', { headers: { cookie: 'sanity-draft-mode=true' } }),
 	});
+
+	// Every optional field absent, exactly as a document written before those
+	// fields existed comes back — including a draft that shadows a complete
+	// published document in preview. The arrays are empty rather than
+	// undefined because the GROQ query coalesces them.
+	current = {
+		...content,
+		settings: {
+			...content.settings,
+			heroTitleLines: [],
+			heroSubLines: [],
+			heroImage: null,
+			portraitImage: null,
+			bioParagraphs: [],
+			aboutHeadingLines: [],
+		},
+		testimonials: [{ ...content.testimonials[0], photo: null }],
+	};
+	sparseHtml = await container.renderToString(Index, { request: new Request('https://coach-raul.test/') });
+	current = content;
 });
 
 describe('rendered home page', () => {
@@ -271,5 +301,50 @@ describe('footer contact details', () => {
 
 		expect(footer).toContain(content.operator.email);
 		expect(footer).toContain(content.operator.phone);
+	});
+});
+
+describe('a document missing the fields a later schema added', () => {
+	/**
+	 * This is the regression that took the live site down twice. A field added
+	 * to the schema does not exist on documents written before it, and both
+	 * failure modes killed the whole response while the page was still
+	 * assembling its frontmatter: `.map` of undefined for an array, and
+	 * "Unable to resolve image URL from source (null)" for an image. The result
+	 * was a 500 with an empty body for content nobody had filled in yet.
+	 *
+	 * The legal details are deliberately not covered by this: getOperator still
+	 * throws, because an Impressum rendering without an address is a missing
+	 * Pflichtangabe, which is worse than an error page.
+	 */
+	it('still renders the page', () => {
+		expect(sparseHtml).toContain('</html>');
+		expect(sparseHtml.match(/<h1[\s>]/g) ?? []).toHaveLength(1);
+	});
+
+	it('omits the images rather than emitting a broken src', () => {
+		// `src="null"` would be a request to /null on every page view.
+		expect(sparseHtml).not.toMatch(/src="null"/);
+		expect(sparseHtml).not.toMatch(/srcset="[^"]*null/);
+		expect(sparseHtml).not.toContain('class="hero-photo"');
+		expect(sparseHtml).not.toContain('class="portrait"');
+	});
+
+	it('keeps the parts that do not depend on the missing fields', () => {
+		// The point of degrading rather than failing: everything else still works.
+		expect(sparseHtml).toContain(content.settings.heroCtaLabel);
+		expect(sparseHtml).toContain('Personal Training');
+		expect(sparseHtml).toContain(`href="${content.settings.bookingUrl}"`);
+		expect(sparseHtml).toContain('href="/impressum/"');
+	});
+
+	it('keeps a story that lost its photo', () => {
+		// The quote is the content; the photo is decoration around it.
+		expect(sparseHtml).toContain('It worked.');
+	});
+
+	it('leaves every surviving image with an alt attribute', () => {
+		const withoutAlt = (sparseHtml.match(/<img\b[^>]*>/g) ?? []).filter((tag) => !/\salt[=\s>]/.test(tag));
+		expect(withoutAlt).toEqual([]);
 	});
 });
