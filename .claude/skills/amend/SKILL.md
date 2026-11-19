@@ -101,9 +101,18 @@ git add -A
 
 **6. Force-push with lease (never a raw force)**
 
+Name both ends of the refspec. Never `git push --force-with-lease origin HEAD`:
+
 ```bash
-git push --force-with-lease origin HEAD
+git push --force-with-lease origin refs/heads/<branch-name>:refs/heads/<branch-name>
 ```
+
+`origin HEAD` leaves the destination to be resolved from config, and this user's
+global `push.default = upstream` resolves it from the branch's _upstream_. On a
+branch whose upstream is `origin/main`, that short form is a **force-push to
+`main`**. The explicit refspec cannot be redirected. Confirm the branch name
+first with `git rev-parse --abbrev-ref HEAD`, and never run it while that prints
+`main`.
 
 `--force-with-lease` refuses to overwrite the remote branch if someone else
 pushed in the meantime — it only succeeds when your local view of the remote is
