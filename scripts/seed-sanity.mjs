@@ -117,7 +117,13 @@ const docs = [
 const run = async () => {
 	process.stdout.write('uploading hero.png... ');
 	const heroImage = await uploadPhoto('hero.png');
-	docs.push({ ...siteSettings, heroImage: { ...heroImage, alt: 'Coach Raul Payares training with a client' } });
+	process.stdout.write('uploading raul-portrait.png... ');
+	const portraitImage = await uploadPhoto('raul-portrait.png');
+	docs.push({
+		...siteSettings,
+		heroImage: { ...heroImage, alt: 'Coach Raul Payares training with a client' },
+		portraitImage: { ...portraitImage, alt: 'Raul Payares' },
+	});
 	console.log('done');
 
 	for (const [i, filename] of testimonialPhotos.entries()) {

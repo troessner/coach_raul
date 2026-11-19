@@ -21,6 +21,11 @@ const content: PageContent = {
 			alt: 'Coach Raul Payares training with a client',
 		},
 		heroCtaLabel: 'Sign up now',
+		portraitImage: {
+			_type: 'image',
+			asset: { _ref: 'image-portrait-908x1210-png' },
+			alt: 'Raul Payares with a slam ball on the Spree',
+		},
 		bioParagraphs: ['Hi,', "I'm Raul Payares, originally from Colombia and now based in Berlin."],
 		bookingUrl: 'https://example.com/pending-cal-com-event',
 	},
@@ -207,5 +212,16 @@ describe('hero photo', () => {
 		// If the local import ever comes back, the optimised filename shows up
 		// here and the two pipelines are both running again.
 		expect(html).not.toMatch(/hero\.[A-Za-z0-9_-]+\.(png|webp|avif)/);
+	});
+});
+
+describe('bio portrait', () => {
+	// Moved out of src/assets and into the CMS for the same reason as the hero.
+	it('carries the alt text from the CMS', () => {
+		expect(html).toContain('alt="Raul Payares with a slam ball on the Spree"');
+	});
+
+	it('no longer emits an astro:assets build of raul-portrait.png', () => {
+		expect(html).not.toMatch(/raul-portrait\.[A-Za-z0-9_-]+\.(png|webp|avif)/);
 	});
 });

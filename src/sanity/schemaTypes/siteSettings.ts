@@ -54,6 +54,24 @@ export const siteSettings = defineType({
 			validation: (rule) => rule.required().max(24),
 		}),
 		defineField({
+			name: 'portraitImage',
+			title: 'Portrait photo',
+			description:
+				'The photo beside the "Meet Coach Raul Payares" bio. Shown in a 3:4 portrait frame and cropped to fill it, so leave room around the edges.',
+			type: 'image',
+			options: { hotspot: true },
+			fields: [
+				defineField({
+					name: 'alt',
+					title: 'Alt text',
+					description: 'Describes the photo for screen readers.',
+					type: 'string',
+					validation: (rule) => rule.required(),
+				}),
+			],
+			validation: (rule) => rule.required(),
+		}),
+		defineField({
 			name: 'bioParagraphs',
 			title: 'Bio (one entry per paragraph)',
 			type: 'array',

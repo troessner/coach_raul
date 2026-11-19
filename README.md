@@ -48,7 +48,7 @@ not a move to another platform.
 - [x] Responsive down to phone width
 - [x] Automatic responsive image optimization (PNG → WebP, ~6.9 MB → ~700 KB)
 - [x] CI: formatting, type-check, build, tests
-- [x] Sanity CMS — hero copy and photo, bio, services, success stories and social links are all editable
+- [x] Sanity CMS — hero copy and photo, bio portrait and text, services, success stories and social links are all editable
 - [x] Side-by-side preview of unpublished edits, and publishing without a deploy
 
 ### Requested, not yet built
@@ -183,23 +183,24 @@ optional, and emits no island at all. It must be `<VisualEditing enabled={previe
 
 ### What is editable
 
-| Document       | Holds                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------ |
-| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio, booking URL |
-| `service`      | The four service cards — title, body, Stripe link, position                                |
-| `testimonial`  | Success stories — quote, client name, photo, position                                      |
-| `social`       | Footer icons — network, accessible label, profile URL, position                            |
+| Document       | Holds                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio portrait, bio, booking URL |
+| `service`      | The four service cards — title, body, Stripe link, position                                              |
+| `testimonial`  | Success stories — quote, client name, photo, position                                                    |
+| `social`       | Footer icons — network, accessible label, profile URL, position                                          |
 
-The portrait and the footer photo are **not** in the CMS. They are design assets rather than
-content, and keeping them local preserves the `astro:assets` optimization.
+The footer photo is **not** in the CMS. It is a design asset rather than content, and keeping it
+local preserves the `astro:assets` optimization.
 
-The hero photo and the testimonial photos **are**, because those are the ones Raul is expected to
-change. They come from Sanity's CDN, which is why `Testimonial.astro` and the hero in
-`index.astro` both use a plain `<img>` with a `srcset` rather than `<Image />` — running both
-pipelines would download every image at build time to re-encode what Sanity already encoded.
+The hero photo, the bio portrait and the testimonial photos **are**, because those are the ones
+Raul is expected to change. They come from Sanity's CDN, which is why `Testimonial.astro`, the
+hero and the portrait in `index.astro` all use a plain `<img>` with a `srcset` rather than
+`<Image />` — running both pipelines would download every image at build time to re-encode what
+Sanity already encoded.
 
-`src/assets/hero.png` is still in the repo even though nothing imports it: `scripts/seed-sanity.mjs`
-uploads it when bootstrapping a dataset.
+`src/assets/hero.png` and `src/assets/raul-portrait.png` are still in the repo even though nothing
+imports them: `scripts/seed-sanity.mjs` uploads them when bootstrapping a dataset.
 
 ### First-time setup
 

@@ -101,6 +101,7 @@ export interface SiteSettings {
 	heroSubLines: string[];
 	heroImage: ImageWithAlt;
 	heroCtaLabel: string;
+	portraitImage: ImageWithAlt;
 	bioParagraphs: string[];
 	bookingUrl: string;
 }
@@ -151,7 +152,7 @@ export const getPageContent = async (preview: boolean): Promise<PageContent> => 
 
 	const [settings, services, testimonials, socials] = await Promise.all([
 		client.fetch<SiteSettings | null>(
-			`*[_type == "siteSettings"][0]{heroTitleLines, heroSubLines, heroImage, heroCtaLabel, bioParagraphs, bookingUrl}`,
+			`*[_type == "siteSettings"][0]{heroTitleLines, heroSubLines, heroImage, heroCtaLabel, portraitImage, bioParagraphs, bookingUrl}`,
 		),
 		client.fetch<Service[]>(`*[_type == "service"]|order(order asc){title, body, href}`),
 		client.fetch<Testimonial[]>(`*[_type == "testimonial"]|order(order asc){quote, name, photo}`),
