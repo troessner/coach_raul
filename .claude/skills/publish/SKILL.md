@@ -110,9 +110,29 @@ git commit -m "..."
 
 **6. Push the branch**
 
+Always push with a **full, explicit refspec**. Never `git push -u origin <branch-name>`:
+
 ```bash
-git push -u origin <branch-name>
+git push origin refs/heads/<branch-name>:refs/heads/<branch-name>
+git branch --set-upstream-to=origin/<branch-name>
 ```
+
+The short form is not safe here. This user's global git config sets
+`push.default = upstream`, so `git push -u origin <branch-name>` resolves the
+destination from the branch's _upstream_ rather than its name — and if the branch
+was cut with `git checkout -b <branch-name> origin/main` (which sets the upstream
+to `origin/main`), that short form pushes the commit **straight onto `main`**,
+silently, with a success message. It has already happened once. The explicit
+refspec above names both ends and cannot be redirected by any config.
+
+Then verify the push went where it was meant to:
+
+```bash
+git ls-remote --heads origin <branch-name>
+```
+
+If that prints nothing, the push landed somewhere else — stop and tell the user
+before doing anything that could compound it.
 
 The CI workflow triggers on `pull_request` and on pushes to `main` only, so this
 push on its own starts nothing — the run appears once the PR exists. No duplicate
@@ -164,13 +184,14 @@ fix commit unless the user asks for one.
 
 **Error table**
 
-| Situation                                    | Action                                                                                   |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Not on `main` in the main checkout           | Stop, instruct user                                                                      |
-| In a linked worktree (e.g. `claude -w`)      | Don't switch to `main`; rename the worktree branch in place (step 4) and publish from it |
-| Nothing to commit but branch ahead of `main` | Work already committed — skip commit, push as-is                                         |
-| CI still failing after 3 fix rounds          | Stop, show errors, ask user                                                              |
-| `npm test` fails with "No build output"      | The tests assert against `dist/` — run `npm run build` first, or just `npm run ci`       |
-| `gh` not authenticated                       | Tell user: `gh auth login`                                                               |
-| `gh pr create` says a PR already exists      | Don't create a second one — point the user at /amend                                     |
-| `gh pr create` error                         | Show error, do not retry silently                                                        |
+| Situation                                              | Action                                                                                            |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Not on `main` in the main checkout                     | Stop, instruct user                                                                               |
+| In a linked worktree (e.g. `claude -w`)                | Don't switch to `main`; rename the worktree branch in place (step 4) and publish from it          |
+| Nothing to commit but branch ahead of `main`           | Work already committed — skip commit, push as-is                                                  |
+| CI still failing after 3 fix rounds                    | Stop, show errors, ask user                                                                       |
+| `npm test` fails with "No build output"                | The tests assert against `dist/` — run `npm run build` first, or just `npm run ci`                |
+| `gh` not authenticated                                 | Tell user: `gh auth login`                                                                        |
+| `gh pr create` says a PR already exists                | Don't create a second one — point the user at /amend                                              |
+| `gh pr create` says "No commits between main and main" | The push landed on `main`, not the branch. Stop, tell the user, don't force-push without approval |
+| `gh pr create` error                                   | Show error, do not retry silently                                                                 |
