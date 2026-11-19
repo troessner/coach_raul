@@ -1,4 +1,5 @@
 ---
+import { renderRichText } from '../lib/richText';
 import { imageUrl } from '../lib/sanity';
 import type { Testimonial } from '../lib/sanity';
 
@@ -32,7 +33,7 @@ const hasPhoto = src !== null;
 			decoding="async"
 		/>
 	)}
-	<blockquote class="quote">{quote}</blockquote>
+	<blockquote class="quote" set:html={renderRichText(quote)} />
 	<figcaption class="name">{name}</figcaption>
 </figure>
 
@@ -65,12 +66,29 @@ const hasPhoto = src !== null;
 		line-height: 1.75;
 	}
 
-	.quote::before {
+	/* On the first and last paragraph rather than on the blockquote: the quote
+	   is Portable Text now, so its content is one or more <p> elements, and a
+	   ::before on the blockquote itself would sit on a line of its own above
+	   them. :global for the same reason as .bio — this markup comes from
+	   set:html and carries no scope attribute. */
+	.quote :global(p) {
+		margin: 0;
+	}
+
+	.quote :global(p + p) {
+		margin-top: 0.75rem;
+	}
+
+	.quote :global(p:first-child)::before {
 		content: '\201C';
 	}
 
-	.quote::after {
+	.quote :global(p:last-child)::after {
 		content: '\201D';
+	}
+
+	.quote :global(.rt-highlight) {
+		color: var(--fg);
 	}
 
 	.name {

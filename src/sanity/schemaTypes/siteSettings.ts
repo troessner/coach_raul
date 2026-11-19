@@ -73,9 +73,12 @@ export const siteSettings = defineType({
 		}),
 		defineField({
 			name: 'bioParagraphs',
-			title: 'Bio (one entry per paragraph)',
-			type: 'array',
-			of: [{ type: 'text', rows: 3 }],
+			title: 'Bio',
+			description: 'Select a word to make it bold, italic, highlighted (white, since the bio is green) or a link.',
+			// Still named bioParagraphs: renaming it would mean reading two field
+			// names for the sake of a tidier one, and the paragraphs are now blocks
+			// inside this array rather than entries of it.
+			type: 'richText',
 			validation: (rule) => rule.required().min(1),
 		}),
 		defineField({
