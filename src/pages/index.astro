@@ -8,6 +8,7 @@ import SocialLinks from '../components/SocialLinks.astro';
 import Testimonial from '../components/Testimonial.astro';
 import { telHref, whatsAppHref } from '../legal';
 import { CONTENT_CACHE, setPageHeaders } from '../lib/headers';
+import { renderRichText } from '../lib/richText';
 import { DRAFT_COOKIE, getPageContent, imageUrl } from '../lib/sanity';
 import gymWeights from '../assets/gym-weights.png';
 
@@ -107,11 +108,9 @@ const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitI
 						</Fragment>
 					))}
 				</h2>
-				<div class="bio">
-					{settings.bioParagraphs.map((paragraph) => (
-						<p>{paragraph}</p>
-					))}
-				</div>
+				<!-- set:html, because the bio is rendered Portable Text rather than a
+				     list of strings. renderRichText escapes the text it emits. -->
+				<div class="bio" set:html={renderRichText(settings.bioParagraphs)} />
 			</div>
 		</section>
 
@@ -295,6 +294,16 @@ const portraitSrcset = [400, 680, 900].map((w) => `${imageUrl(settings.portraitI
 		color: var(--accent);
 		font-size: 0.82rem;
 		line-height: 1.8;
+	}
+
+	/* :global, because scoped styles are applied at compile time and this markup
+	   arrives through set:html with no scope attribute on it. */
+	.bio :global(.rt-highlight) {
+		color: var(--fg);
+	}
+
+	.bio :global(a) {
+		color: var(--fg);
 	}
 
 	.bio p {

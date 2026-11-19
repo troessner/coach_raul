@@ -74,6 +74,20 @@ const socials = [
 	{ network: 'tiktok', label: 'TikTok' },
 ];
 
+/**
+ * The bio and the quotes are richText fields, so the seed writes blocks rather
+ * than strings — a fresh dataset should not need the migration script that
+ * exists for the dataset that predates them.
+ */
+const toBlocks = (...paragraphs) =>
+	paragraphs.map((text, i) => ({
+		_type: 'block',
+		_key: `seed-${i}`,
+		style: 'normal',
+		markDefs: [],
+		children: [{ _type: 'span', _key: `seed-${i}-0`, text, marks: [] }],
+	}));
+
 const uploadPhoto = async (filename) => {
 	const path = fileURLToPath(new URL(`../src/assets/${filename}`, import.meta.url));
 	const asset = await client.assets.upload('image', await readFile(path), { filename });
@@ -91,14 +105,14 @@ const siteSettings = {
 	classesHeading: 'Group classes',
 	storiesHeading: 'Success stories',
 	connectHeading: 'Stay connected',
-	bioParagraphs: [
+	bioParagraphs: toBlocks(
 		'Hi,',
 		"I'm Raul Payares, originally from Colombia and now based in Berlin.",
 		"With over 15 years of experience in fitness and coaching, I've dedicated my career to helping people become stronger, healthier, and more confident.",
 		'I specialize in strength and high intensity training, functional fitness, and mindset coaching, helping people of all fitness levels achieve lasting results.',
 		"I believe fitness is more than just physical transformation. It's about building discipline, confidence, mental resilience, and a healthier lifestyle.",
 		'My mission is simple: To help you build a stronger body, a stronger mind, and become the best version of yourself.',
-	],
+	),
 	bookingUrl: PENDING('cal-com-event'),
 };
 
@@ -163,7 +177,7 @@ const run = async () => {
 		docs.push({
 			_id: `testimonial-${i + 1}`,
 			_type: 'testimonial',
-			quote: PLACEHOLDER_QUOTE,
+			quote: toBlocks(PLACEHOLDER_QUOTE),
 			name: 'Client name',
 			photo: { ...photo, alt: 'Client name' },
 			order: i + 1,

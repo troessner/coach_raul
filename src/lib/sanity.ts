@@ -2,6 +2,7 @@ import { createClient, type SanityClient } from '@sanity/client';
 // The default export is the deprecated alias; createImageUrlBuilder is the one
 // that is not going away.
 import { createImageUrlBuilder, type SanityImageSource } from '@sanity/image-url';
+import type { RichText } from './richText';
 
 /**
  * Two clients, one difference that matters: which documents they can see.
@@ -112,7 +113,8 @@ export interface SiteSettings {
 	heroImage: ImageWithAlt | null;
 	heroCtaLabel: string;
 	portraitImage: ImageWithAlt | null;
-	bioParagraphs: string[];
+	/** Rich text, or the plain strings pre-migration documents still hold. */
+	bioParagraphs: RichText;
 	aboutHeadingLines: string[];
 	servicesHeading: string;
 	classesHeading: string;
@@ -143,7 +145,8 @@ export interface Service {
 }
 
 export interface Testimonial {
-	quote: string;
+	/** Rich text, or the plain string pre-migration documents still hold. */
+	quote: RichText;
 	name: string;
 	photo: ImageWithAlt | null;
 }

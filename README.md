@@ -187,13 +187,46 @@ optional, and emits no island at all. It must be `<VisualEditing enabled={previe
 
 ### What is editable
 
-| Document       | Holds                                                                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio portrait, bio, every section heading, booking URL |
-| `operator`     | Legal and contact details — name, address, phone, email, VAT ID                                                                 |
-| `service`      | The four service cards — title, body, Stripe link, position                                                                     |
-| `testimonial`  | Success stories — quote, client name, photo, position                                                                           |
-| `social`       | Footer icons — network, accessible label, profile URL, position                                                                 |
+| Document       | Holds                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `siteSettings` | Hero headline and subline (one entry per line), hero photo, button label, bio portrait, bio (rich text), every section heading, booking URL |
+| `operator`     | Legal and contact details — name, address, phone, email, VAT ID                                                                             |
+| `service`      | The four service cards — title, body, Stripe link, position                                                                                 |
+| `testimonial`  | Success stories — quote (rich text), client name, photo, position                                                                           |
+| `social`       | Footer icons — network, accessible label, profile URL, position                                                                             |
+
+### Rich text
+
+The bio and the story quotes are the two fields that are somebody's prose rather than display
+type, so they are Portable Text — select a word in the Studio to make it **bold**, _italic_,
+highlighted or a link. Everything else stays a plain string on purpose: a stray bold word in a
+hero headline reads as a mistake rather than a choice, and the design owns how display type looks.
+
+The mark set is deliberately short — bold, italic, highlight, link. No headings (a bio with an
+`<h2>` in it fights the page's own heading order) and no lists (the design has no list style).
+**Highlight renders white**, not green: the bio is accent green end to end, so a green decorator
+would be invisible exactly where someone would reach for it. The colour lives in the component's
+CSS, never in the content.
+
+`src/lib/richText.ts` renders it, and `tests/rich-text.test.ts` is the one test file worth reading
+before changing any of it: the output goes through `set:html`, so escaping and URL schemes are
+load-bearing. A `javascript:` href is dropped and keeps its text; an annotation saved without a
+URL renders no anchor at all.
+
+It also accepts the plain strings these fields held before, rendering each as one paragraph. That
+is what lets the deploy and `scripts/migrate-rich-text.mjs` happen in either order — the site is
+correct either side of the migration. The migration exists for the **Studio**, not the site: a
+Portable Text input handed a string shows the field as invalid, so until it runs Raul opens the
+bio to an error instead of his text.
+
+```sh
+SANITY_WRITE_TOKEN=... node scripts/migrate-rich-text.mjs --dry-run   # lists what it would touch
+SANITY_WRITE_TOKEN=... node scripts/migrate-rich-text.mjs
+```
+
+Idempotent, and it converts drafts as well as published documents — a draft shadows its published
+document completely in preview, so converting only the published copy leaves the Studio previewing
+an unconverted draft.
 
 ### What fails loudly, and what does not
 
@@ -554,7 +587,8 @@ src/
 └── legal.ts            the tel:/WhatsApp transforms (the details themselves are in the CMS)
 sanity.config.ts        Studio wiring: Presentation preview + the two singletons
 scripts/
-└── seed-sanity.mjs     one-shot import of the formerly hardcoded copy
+├── seed-sanity.mjs     one-shot import of the formerly hardcoded copy
+└── migrate-rich-text.mjs  converts pre-rich-text bio/quote strings to blocks
 tests/
 ├── home-page.test.ts       the home page, rendered through Astro's container
 ├── legal-pages.test.ts     Impressum + Datenschutz, likewise, incl. the § 5 DDG fields

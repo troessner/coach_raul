@@ -7,9 +7,9 @@ export const testimonial = defineType({
 	fields: [
 		defineField({
 			name: 'quote',
-			type: 'text',
-			rows: 4,
-			validation: (rule) => rule.required(),
+			description: 'Select a word to make it bold, italic, highlighted or a link.',
+			type: 'richText',
+			validation: (rule) => rule.required().min(1),
 		}),
 		defineField({
 			name: 'name',
@@ -40,5 +40,19 @@ export const testimonial = defineType({
 		}),
 	],
 	orderings: [{ title: 'Page order', name: 'pageOrder', by: [{ field: 'order', direction: 'asc' }] }],
-	preview: { select: { title: 'name', subtitle: 'quote', media: 'photo' } },
+	preview: {
+		select: { title: 'name', quote: 'quote', media: 'photo' },
+		// The quote is blocks now, and a block array rendered as a subtitle reads
+		// "[object Object]". Flattened to its spans for the list.
+		prepare: ({ title, quote, media }) => ({
+			title,
+			subtitle: Array.isArray(quote)
+				? quote
+						.flatMap((block) => (Array.isArray(block?.children) ? block.children : []))
+						.map((span) => span?.text ?? '')
+						.join('')
+				: (quote ?? ''),
+			media,
+		}),
+	},
 });
